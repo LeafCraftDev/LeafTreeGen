@@ -1,0 +1,102 @@
+[
+  {
+    "name": "christmas-tree",
+    "comment": "christmas tree - a decorated glacierpine: same full conical snow-laden spruce silhouette as the tall glacierpine, dressed with colored glass ornaments, glowing froglight/glowstone baubles and end-rod icicles on the branch tips",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "secondary_leaves": "minecraft:snow_block",
+    "secondary_leaf_fraction": 0.18,
+    "profile": "spruce",
+    "height_min": 26,
+    "height_max": 36,
+    "seed": 5300,
+    "count": 2,
+    "trunk_width": 3,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.0 },
+    "canopy": {
+      "start_angle": 126,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.84,
+      "crown_volume_fraction": 1.0,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.3 },
+        "length_fn": "linear",
+        "length_params": { "base": 5, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.8,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    },
+    "decorators": [
+      {
+        "target": "canopy_top",
+        "block": "minecraft:snow[layers=2]",
+        "chance": 0.55
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:red_stained_glass",
+        "chance": 0.06
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:blue_stained_glass",
+        "chance": 0.05
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:yellow_stained_glass",
+        "chance": 0.05
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:shroomlight",
+        "chance": 0.04
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:sea_lantern",
+        "chance": 0.03
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:ochre_froglight",
+        "chance": 0.03
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:verdant_froglight",
+        "chance": 0.03
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:pearlescent_froglight",
+        "chance": 0.03
+      },
+      {
+        "target": "leaf_exterior",
+        "block": "minecraft:glowstone",
+        "chance": 0.03
+      },
+      {
+        "target": "branch_tip",
+        "block": "minecraft:end_rod[facing=down]",
+        "chance": 0.6
+      }
+    ]
+  }
+]

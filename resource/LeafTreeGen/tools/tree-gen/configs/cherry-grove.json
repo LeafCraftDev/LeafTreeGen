@@ -1,0 +1,363 @@
+[
+  {
+    "name": "cherry",
+    "comment": "cherry small A - tight layered crown",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 7,
+    "height_max": 10,
+    "seed": 3400,
+    "count": 2,
+    "trunk_width": 1,
+    "trunk_shape": "sine",
+    "trunk_shape_params": { "period": 0.8, "amplitude": 0.12 },
+    "canopy": {
+      "start_angle": 50,
+      "squish": 1.0,
+      "mode": "density",
+      "leaf_density": 0.92,
+      "layers": [
+        { "y_offset": 5, "radius": 3.0 },
+        { "y_offset": 7, "radius": 3.5 },
+        { "y_offset": 9, "radius": 2.5 }
+      ]
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry small B - round dense crown",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 8,
+    "height_max": 12,
+    "seed": 3401,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "sine",
+    "trunk_shape_params": { "period": 0.75, "amplitude": 0.14 },
+    "canopy": {
+      "start_angle": 48,
+      "squish": 1.0,
+      "mode": "density",
+      "leaf_density": 0.9,
+      "layers": [
+        { "y_offset": 6, "radius": 3.5 },
+        { "y_offset": 8, "radius": 4.0 },
+        { "y_offset": 10, "radius": 3.0 },
+        { "y_offset": 12, "radius": 1.5 }
+      ]
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry small C - wide low blossom",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 9,
+    "height_max": 13,
+    "seed": 3402,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.2 },
+    "canopy": {
+      "start_angle": 55,
+      "squish": 0.9,
+      "mode": "density",
+      "leaf_density": 0.88
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry medium A - branching, gaussian prob",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 13,
+    "height_max": 18,
+    "seed": 3403,
+    "count": 3,
+    "trunk_width": 2,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.4 },
+    "canopy": {
+      "start_angle": 62,
+      "squish": 1.0,
+      "mode": "density",
+      "leaf_density": 0.88,
+      "branches": {
+        "prob_fn": "gaussian",
+        "prob_params": { "mean": 0.7, "std": 0.15 },
+        "length_fn": "parabolic",
+        "length_params": { "max_len": 4 },
+        "azimuth": "random",
+        "elevation": 26,
+        "leaf_start_up": true,
+        "cluster_radius": 3,
+        "cluster_mode": "density",
+        "cluster_density": 0.88
+      }
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry medium B - sigmoid trunk, sub-branches",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 15,
+    "height_max": 21,
+    "seed": 3404,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 4.5 },
+    "canopy": {
+      "start_angle": 65,
+      "squish": 1.0,
+      "mode": "density",
+      "leaf_density": 0.87,
+      "branches": {
+        "prob_fn": "gaussian",
+        "prob_params": { "mean": 0.72, "std": 0.14 },
+        "length_fn": "parabolic",
+        "length_params": { "max_len": 5 },
+        "azimuth": "random",
+        "elevation": 24,
+        "leaf_start_up": true,
+        "cluster_radius": 3,
+        "cluster_mode": "density",
+        "cluster_density": 0.87,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 65,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "density",
+          "cluster_density": 0.84
+        }
+      }
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry medium C - parabolic trunk, wide spread",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 16,
+    "height_max": 22,
+    "seed": 3405,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.22 },
+    "canopy": {
+      "start_angle": 68,
+      "squish": 0.85,
+      "mode": "density",
+      "leaf_density": 0.86,
+      "branches": {
+        "prob_fn": "gaussian",
+        "prob_params": { "mean": 0.74, "std": 0.13 },
+        "length_fn": "parabolic",
+        "length_params": { "max_len": 6 },
+        "azimuth": "random",
+        "elevation": 22,
+        "leaf_start_up": true,
+        "cluster_radius": 3,
+        "cluster_mode": "density",
+        "cluster_density": 0.86,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 62,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "density",
+          "cluster_density": 0.83
+        }
+      }
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry large A - tall trunk, sweeping canopy",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 40,
+    "height_max": 58,
+    "seed": 3406,
+    "count": 4,
+    "trunk_width": 3,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.24 },
+    "canopy": {
+      "start_angle": 88,
+      "squish": 0.72,
+      "mode": "density",
+      "leaf_density": 0.9,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.5 },
+        "length_fn": "parabolic",
+        "length_params": { "max_len": 12 },
+        "azimuth": "random",
+        "elevation": 20,
+        "leaf_start_up": true,
+        "cluster_radius": 5,
+        "cluster_mode": "density",
+        "cluster_density": 0.88,
+        "sub_branches": {
+          "count": 3,
+          "pitch_delta": -18,
+          "yaw_delta": 55,
+          "length_scale": 0.58,
+          "cluster_radius": 3,
+          "cluster_mode": "density",
+          "cluster_density": 0.84
+        }
+      }
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry large B - leaning, drooping branches",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 55,
+    "height_max": 75,
+    "seed": 3407,
+    "count": 5,
+    "trunk_width": 3,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 5.0 },
+    "lean_azimuth": 90,
+    "lean_angle": 18,
+    "trunk_curve_fn": "sigmoid",
+    "trunk_curve_params": { "steepness": 7.0 },
+    "canopy": {
+      "start_angle": 90,
+      "squish": 0.75,
+      "mode": "density",
+      "leaf_density": 0.88,
+      "branches": {
+        "prob_fn": "gaussian",
+        "prob_params": { "mean": 0.76, "std": 0.14 },
+        "length_fn": "linear",
+        "length_params": { "base": 5, "crown": 11 },
+        "azimuth": "random",
+        "elevation": 16,
+        "leaf_start_up": true,
+        "cluster_radius": 5,
+        "cluster_mode": "density",
+        "cluster_density": 0.87,
+        "sub_branches": {
+          "count": 3,
+          "pitch_delta": -20,
+          "yaw_delta": 58,
+          "length_scale": 0.55,
+          "cluster_radius": 4,
+          "cluster_mode": "density",
+          "cluster_density": 0.83
+        }
+      }
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry giant A - upright giant, massive drooping canopy",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 72,
+    "height_max": 92,
+    "seed": 3408,
+    "count": 5,
+    "trunk_width": 4,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.28 },
+    "lean_azimuth": 0,
+    "lean_angle": 8,
+    "trunk_curve_fn": "parabolic",
+    "trunk_curve_params": {},
+    "canopy": {
+      "start_angle": 90,
+      "squish": 0.68,
+      "mode": "density",
+      "leaf_density": 0.9,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.5 },
+        "length_fn": "linear",
+        "length_params": { "base": 7, "crown": 20 },
+        "azimuth": "random",
+        "elevation": 12,
+        "leaf_start_up": true,
+        "cluster_radius": 6,
+        "cluster_mode": "density",
+        "cluster_density": 0.88,
+        "sub_branches": {
+          "count": 4,
+          "pitch_delta": -26,
+          "yaw_delta": 52,
+          "length_scale": 0.62,
+          "cluster_radius": 5,
+          "cluster_mode": "density",
+          "cluster_density": 0.84
+        }
+      }
+    }
+  },
+  {
+    "name": "cherry",
+    "comment": "cherry giant B - tallest upright, wide sweeping crown",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 88,
+    "height_max": 112,
+    "seed": 3409,
+    "count": 6,
+    "trunk_width": 5,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.32 },
+    "lean_azimuth": 180,
+    "lean_angle": 8,
+    "trunk_curve_fn": "parabolic",
+    "trunk_curve_params": {},
+    "canopy": {
+      "start_angle": 90,
+      "squish": 0.65,
+      "mode": "density",
+      "leaf_density": 0.9,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.5 },
+        "length_fn": "linear",
+        "length_params": { "base": 8, "crown": 25 },
+        "azimuth": "random",
+        "elevation": 10,
+        "leaf_start_up": true,
+        "cluster_radius": 7,
+        "cluster_mode": "density",
+        "cluster_density": 0.88,
+        "sub_branches": {
+          "count": 4,
+          "pitch_delta": -28,
+          "yaw_delta": 50,
+          "length_scale": 0.65,
+          "cluster_radius": 6,
+          "cluster_mode": "density",
+          "cluster_density": 0.84
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,258 @@
+[
+  {
+    "name": "birch",
+    "comment": "birch medium A - baseline tall for old-growth",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 14,
+    "height_max": 18,
+    "seed": 3200,
+    "count": 2,
+    "trunk_width": 1,
+    "trunk_shape": "sine",
+    "trunk_shape_params": { "period": 0.65, "amplitude": 0.09 },
+    "canopy": {
+      "start_angle": 118,
+      "squish": 1.2,
+      "mode": "trimmed",
+      "leaf_density": 0.88
+    }
+  },
+  {
+    "name": "birch",
+    "comment": "birch medium B - log trunk, branching",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 16,
+    "height_max": 21,
+    "seed": 3201,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.2 },
+    "canopy": {
+      "start_angle": 116,
+      "squish": 1.25,
+      "mode": "trimmed",
+      "leaf_density": 0.87,
+      "branches": {
+        "prob_fn": "linear",
+        "prob_params": { "base_p": 0.04, "crown_p": 0.65 },
+        "length_fn": "sigmoid",
+        "length_params": { "max_len": 3, "steepness": 5.0 },
+        "azimuth": "random",
+        "elevation": 20,
+        "leaf_start_up": true,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.86
+      }
+    }
+  },
+  {
+    "name": "birch",
+    "comment": "birch tall A - dominant height, narrow crown",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 20,
+    "height_max": 27,
+    "seed": 3202,
+    "count": 4,
+    "trunk_width": 1,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 4.5 },
+    "canopy": {
+      "start_angle": 113,
+      "squish": 1.35,
+      "mode": "trimmed",
+      "leaf_density": 0.86,
+      "branches": {
+        "prob_fn": "linear",
+        "prob_params": { "base_p": 0.03, "crown_p": 0.7 },
+        "length_fn": "sigmoid",
+        "length_params": { "max_len": 4, "steepness": 6.0 },
+        "azimuth": "random",
+        "elevation": 18,
+        "leaf_start_up": true,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.85,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 70,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "birch",
+    "comment": "birch tall B - sine trunk, feathery spread",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 22,
+    "height_max": 30,
+    "seed": 3203,
+    "count": 4,
+    "trunk_width": 1,
+    "trunk_shape": "sine",
+    "trunk_shape_params": { "period": 0.55, "amplitude": 0.11 },
+    "canopy": {
+      "start_angle": 112,
+      "squish": 1.3,
+      "mode": "trimmed",
+      "leaf_density": 0.85,
+      "branches": {
+        "prob_fn": "gaussian",
+        "prob_params": { "mean": 0.78, "std": 0.13 },
+        "length_fn": "sigmoid",
+        "length_params": { "max_len": 5, "steepness": 5.5 },
+        "azimuth": "random",
+        "elevation": 17,
+        "leaf_start_up": true,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.84,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 68,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "birch",
+    "comment": "birch tall C - very tall, sparse high crown",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 27,
+    "height_max": 36,
+    "seed": 3204,
+    "count": 5,
+    "trunk_width": 1,
+    "trunk_shape": "linear",
+    "trunk_shape_params": { "start": 1.0, "end": 0.85 },
+    "canopy": {
+      "start_angle": 110,
+      "squish": 1.4,
+      "mode": "trimmed",
+      "leaf_density": 0.82,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.8 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 5 },
+        "azimuth": "random",
+        "elevation": 15,
+        "leaf_start_up": true,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.82,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 70,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "birch",
+    "comment": "birch giant A - old-growth patriarch, wide branching",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 34,
+    "height_max": 45,
+    "seed": 3205,
+    "count": 5,
+    "trunk_width": 2,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.5 },
+    "canopy": {
+      "start_angle": 108,
+      "squish": 1.2,
+      "mode": "trimmed",
+      "leaf_density": 0.8,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.5 },
+        "length_fn": "linear",
+        "length_params": { "base": 3, "crown": 8 },
+        "azimuth": "random",
+        "elevation": 14,
+        "leaf_start_up": true,
+        "cluster_radius": 3,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.8,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 65,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "birch",
+    "comment": "birch giant B - tallest old-growth, upright lean",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 42,
+    "height_max": 55,
+    "seed": 3206,
+    "count": 6,
+    "trunk_width": 2,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.2 },
+    "lean_azimuth": 0,
+    "lean_angle": 6,
+    "trunk_curve_fn": "sigmoid",
+    "trunk_curve_params": { "steepness": 5.0 },
+    "canopy": {
+      "start_angle": 106,
+      "squish": 1.15,
+      "mode": "trimmed",
+      "leaf_density": 0.78,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 3.0 },
+        "length_fn": "linear",
+        "length_params": { "base": 4, "crown": 10 },
+        "azimuth": "random",
+        "elevation": 12,
+        "leaf_start_up": true,
+        "cluster_radius": 3,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.78,
+        "sub_branches": {
+          "count": 3,
+          "pitch_delta": -22,
+          "yaw_delta": 62,
+          "length_scale": 0.48,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,254 @@
+[
+  {
+    "name": "spruce",
+    "comment": "spruce medium A - baseline for old-growth, log taper",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 20,
+    "height_max": 28,
+    "seed": 3600,
+    "count": 2,
+    "trunk_width": 2,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.0 },
+    "canopy": {
+      "start_angle": 130,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.85
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce medium B - sigmoid, drooping branches",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 24,
+    "height_max": 34,
+    "seed": 3601,
+    "count": 3,
+    "trunk_width": 2,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 3.5 },
+    "canopy": {
+      "start_angle": 128,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.84,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.3 },
+        "length_fn": "linear",
+        "length_params": { "base": 4, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.8
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce tall A - dominant height, heavy drooping",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 32,
+    "height_max": 44,
+    "seed": 3602,
+    "count": 4,
+    "trunk_width": 3,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.0 },
+    "canopy": {
+      "start_angle": 126,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.83,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.32 },
+        "length_fn": "linear",
+        "length_params": { "base": 5, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.78,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce tall B - sigmoid, sparse upper",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 38,
+    "height_max": 52,
+    "seed": 3603,
+    "count": 4,
+    "trunk_width": 3,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 4.0 },
+    "canopy": {
+      "start_angle": 124,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.81,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.3 },
+        "length_fn": "linear",
+        "length_params": { "base": 6, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.76,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 58,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce tall C - linear taper, very tall",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 44,
+    "height_max": 58,
+    "seed": 3604,
+    "count": 5,
+    "trunk_width": 3,
+    "trunk_shape": "linear",
+    "trunk_shape_params": { "start": 1.0, "end": 0.55 },
+    "canopy": {
+      "start_angle": 122,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.79,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.28 },
+        "length_fn": "linear",
+        "length_params": { "base": 6, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.75,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 58,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce mega A - patriarch, thick trunk",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 55,
+    "height_max": 72,
+    "seed": 3605,
+    "count": 5,
+    "trunk_width": 4,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.0 },
+    "canopy": {
+      "start_angle": 120,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.77,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.35 },
+        "length_fn": "linear",
+        "length_params": { "base": 7, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.76,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce mega B - tallest old-growth, sparse crown",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 68,
+    "height_max": 88,
+    "seed": 3606,
+    "count": 6,
+    "trunk_width": 4,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.1 },
+    "canopy": {
+      "start_angle": 118,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.74,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.3 },
+        "length_fn": "linear",
+        "length_params": { "base": 9, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.73,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -22,
+          "yaw_delta": 58,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  }
+]

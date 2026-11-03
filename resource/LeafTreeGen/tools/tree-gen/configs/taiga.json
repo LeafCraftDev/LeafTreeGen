@@ -1,0 +1,414 @@
+[
+  {
+    "name": "spruce",
+    "comment": "spruce small A - scaled-down mega pine (slim conifer)",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 10,
+    "height_max": 14,
+    "seed": 3500,
+    "count": 2,
+    "trunk_width": 1,
+    "trunk_shape": "linear",
+    "trunk_shape_params": { "start": 1.0, "end": 0.85 },
+    "canopy": {
+      "start_angle": 130,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.88,
+      "crown_volume_fraction": 0.65,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.32 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 1,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.85,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce small B - scaled-down mega pine (dense cone)",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 12,
+    "height_max": 16,
+    "seed": 3501,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "linear",
+    "trunk_shape_params": { "start": 1.0, "end": 0.85 },
+    "canopy": {
+      "start_angle": 128,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.88,
+      "crown_volume_fraction": 0.65,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.34 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 1,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.85,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce small C - scaled-down mega pine (tapered base)",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 11,
+    "height_max": 15,
+    "seed": 3502,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "linear",
+    "trunk_shape_params": { "start": 1.0, "end": 0.8 },
+    "canopy": {
+      "start_angle": 132,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.87,
+      "crown_volume_fraction": 0.65,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.3 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 1,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.85,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce medium A - scaled-down mega pine (layered)",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 18,
+    "height_max": 26,
+    "seed": 3503,
+    "count": 3,
+    "trunk_width": 2,
+    "trunk_shape": "linear",
+    "trunk_shape_params": { "start": 1.0, "end": 0.65 },
+    "canopy": {
+      "start_angle": 128,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.85,
+      "crown_volume_fraction": 0.62,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.32 },
+        "length_fn": "linear",
+        "length_params": { "base": 4, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.8,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce medium B - scaled-down mega pine (drooping)",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 20,
+    "height_max": 30,
+    "seed": 3504,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 3.5 },
+    "canopy": {
+      "start_angle": 126,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.84,
+      "crown_volume_fraction": 0.62,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.32 },
+        "length_fn": "linear",
+        "length_params": { "base": 4, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.8,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce medium C - scaled-down mega pine (full cone)",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 22,
+    "height_max": 32,
+    "seed": 3505,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.0 },
+    "canopy": {
+      "start_angle": 125,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.83,
+      "crown_volume_fraction": 0.62,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.33 },
+        "length_fn": "linear",
+        "length_params": { "base": 5, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.8,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce tall A - scaled-down mega pine (wide trunk)",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 32,
+    "height_max": 44,
+    "seed": 3506,
+    "count": 4,
+    "trunk_width": 3,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.0 },
+    "canopy": {
+      "start_angle": 124,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.82,
+      "crown_volume_fraction": 0.6,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.32 },
+        "length_fn": "linear",
+        "length_params": { "base": 6, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.78,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce tall B - scaled-down mega pine (tall)",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 38,
+    "height_max": 52,
+    "seed": 3507,
+    "count": 5,
+    "trunk_width": 3,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 4.0 },
+    "canopy": {
+      "start_angle": 122,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.81,
+      "crown_volume_fraction": 0.6,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.3 },
+        "length_fn": "linear",
+        "length_params": { "base": 6, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.78,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 58,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce mega A - thick trunk, massive layered cone",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 52,
+    "height_max": 68,
+    "seed": 3508,
+    "count": 5,
+    "trunk_width": 4,
+    "roots": false,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.0 },
+    "canopy": {
+      "start_angle": 120,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.8,
+      "crown_volume_fraction": 0.6,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.35 },
+        "length_fn": "linear",
+        "length_params": { "base": 7, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.78,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "spruce",
+    "comment": "spruce mega B - tallest, full layered cone",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "profile": "spruce",
+    "height_min": 65,
+    "height_max": 82,
+    "seed": 3509,
+    "count": 6,
+    "trunk_width": 4,
+    "roots": false,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.1 },
+    "canopy": {
+      "start_angle": 118,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.78,
+      "crown_volume_fraction": 0.6,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 0.32 },
+        "length_fn": "linear",
+        "length_params": { "base": 8, "crown": 1 },
+        "azimuth": "random",
+        "elevation": 0,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.76,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -22,
+          "yaw_delta": 58,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  }
+]

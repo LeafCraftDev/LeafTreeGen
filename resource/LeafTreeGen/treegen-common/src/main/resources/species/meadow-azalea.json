@@ -1,0 +1,42 @@
+[
+  {
+    "name": "azalea",
+    "comment": "azalea A - small oak-log trunk topped by a leafy azalea crown",
+    "trunk": "minecraft:oak_log",
+    "leaves": "minecraft:azalea_leaves",
+    "profile": "oak",
+    "height_min": 4,
+    "height_max": 6,
+    "seed": 6100,
+    "count": 5,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "start_angle": 130,
+      "squish": 0.8,
+      "mode": "density",
+      "leaf_density": 0.92
+    }
+  },
+  {
+    "name": "flowering_azalea",
+    "comment": "azalea B - flowering azalea crown, bright pink blossoms",
+    "trunk": "minecraft:oak_log",
+    "leaves": "minecraft:flowering_azalea_leaves",
+    "profile": "oak",
+    "height_min": 5,
+    "height_max": 7,
+    "seed": 6101,
+    "count": 4,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "start_angle": 126,
+      "squish": 0.85,
+      "mode": "density",
+      "leaf_density": 0.9
+    }
+  }
+]

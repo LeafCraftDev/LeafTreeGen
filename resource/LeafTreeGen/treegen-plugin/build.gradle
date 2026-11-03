@@ -1,0 +1,148 @@
+// LeafTreeGen - single multi-loader assembly jar.
+//
+// Bundles the platform-neutral core (treegen-common), its standalone SDK
+// dependencies (yaml-api, commands-api, predict-api), and every platform
+// carrier (Paper/Folia, Fabric, NeoForge) into a single LeafTreeGen-<version>.jar.
+plugins {
+    id 'java-library'
+    id 'com.gradleup.shadow'
+}
+
+group = 'io.github.dailystruggle'
+version = '1.1.0'
+
+base {
+    archivesName = 'LeafTreeGen'
+}
+
+def hasJdk25Carriers = findProject(':resource:LeafTreeGen:treegen-fabric') != null ||
+        findProject(':resource:LeafTreeGen:treegen-neoforge') != null
+
+java {
+    if (hasJdk25Carriers) {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(25)
+        }
+    } else {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+}
+
+dependencies {
+    implementation project(':resource:LeafTreeGen:treegen-common')
+    // Carrier modules are declared as `api` so Shadow's UnusedTracker treats their
+    // entry points as reachability roots while tree-shaking shaded SDK libraries.
+    api project(':resource:LeafTreeGen:treegen-paper')
+    implementation(project(':bukkit:bukkit-common')) { transitive = false }
+    implementation(project(':effects-api')) { transitive = false }
+
+    if (findProject(':resource:LeafTreeGen:treegen-fabric') != null) {
+        api(project(':resource:LeafTreeGen:treegen-fabric')) { transitive = false }
+        implementation(project(':fabric:fabric-common-unobf')) { transitive = false }
+        implementation(project(':effects-api:effects-api-fabric-unobf')) { transitive = false }
+    }
+    if (findProject(':resource:LeafTreeGen:treegen-neoforge') != null) {
+        api(project(':resource:LeafTreeGen:treegen-neoforge')) { transitive = false }
+        implementation(project(':neoforge:neoforge-common')) { transitive = false }
+        implementation(project(':neoforge:neoforge-v26_1_R1')) { transitive = false }
+    }
+}
+
+shadowJar {
+    archiveBaseName.set('LeafTreeGen')
+    archiveClassifier.set('')
+    mergeServiceFiles()
+
+    from(project(':resource:LeafTreeGen').projectDir) {
+        include 'LICENSE'
+        into 'META-INF/leaftreegen'
+    }
+    from(new File(project(':resource:LeafTreeGen').projectDir, 'docs')) {
+        include 'usage.md'
+        into 'META-INF/leaftreegen'
+    }
+
+    // Never let a shaded dependency's plugin.yml (e.g. commands-api) leak into
+    // our jar; LeafTreeGen ships paper-plugin.yml so PaperBootstrap runs before
+    // worldgen datapack discovery.
+    exclude 'plugin.yml'
+    exclude 'META-INF/services/io.github.dailystruggle.rtp.**'
+    exclude 'org/jetbrains/annotations/**'
+    exclude 'org/intellij/lang/annotations/**'
+    exclude 'META-INF/maven/**'
+    exclude 'META-INF/versions/*/module-info.class'
+}
+
+tasks.named('jar') { enabled = false }
+assemble.dependsOn shadowJar
+
+// ADR-126: Generate SHA-256 and SHA-512 checksums and in-memory PGP signatures for release deliverables.
+tasks.register('generateChecksums') {
+    group = 'build'
+    description = 'Generates SHA-256 and SHA-512 checksums for LeafTreeGen release deliverables (ADR-126).'
+    dependsOn tasks.named('shadowJar')
+
+    doLast {
+        File jarFile = tasks.named('shadowJar').get().archiveFile.get().asFile
+        if (jarFile.exists()) {
+            ['SHA-256': '.sha256', 'SHA-512': '.sha512'].each { algo, ext ->
+                def digest = java.security.MessageDigest.getInstance(algo)
+                jarFile.withInputStream { is ->
+                    byte[] buffer = new byte[8192]
+                    int read
+                    while ((read = is.read(buffer)) > 0) {
+                        digest.update(buffer, 0, read)
+                    }
+                }
+                def hex = digest.digest().collect { String.format('%02x', it) }.join('')
+                def checksumFile = new File(jarFile.parentFile, jarFile.name + ext)
+                checksumFile.text = "${hex}  ${jarFile.name}\n"
+                logger.lifecycle("[ADR-126] Generated ${algo} checksum for ${jarFile.name} -> ${checksumFile.name}")
+            }
+        }
+    }
+}
+
+apply plugin: 'signing'
+
+signing {
+    def signingKey = findProperty('signingKey') as String
+    def signingPassword = findProperty('signingPassword') as String
+    if (findProperty('signWithGpgCmd') != null) {
+        useGpgCmd()
+    } else if (signingKey) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    }
+}
+
+tasks.register('signDeliverables') {
+    group = 'signing'
+    description = 'Signs the LeafTreeGen shaded release deliverable if signing keys are present (ADR-126).'
+    dependsOn tasks.named('shadowJar')
+
+    doLast {
+        def signingKey = findProperty('signingKey') as String
+        def useGpg = findProperty('signWithGpgCmd') != null
+        if (!signingKey && !useGpg) {
+            logger.info('[ADR-126] Skipping signDeliverables: no signing credentials configured.')
+            return
+        }
+
+        File jarFile = tasks.named('shadowJar').get().archiveFile.get().asFile
+        if (jarFile.exists()) {
+            try {
+                project.signing.sign(jarFile)
+                logger.lifecycle("[ADR-126] Signed deliverable: ${jarFile.name}")
+            } catch (Exception e) {
+                logger.warn("[ADR-126] Failed to sign deliverable ${jarFile.name}: ${e.message}")
+                if (project.hasProperty('strictSigning')) {
+                    throw e
+                }
+            }
+        }
+    }
+}
+
+assemble.dependsOn tasks.named('generateChecksums')

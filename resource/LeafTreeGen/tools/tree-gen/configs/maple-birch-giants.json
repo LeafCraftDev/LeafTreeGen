@@ -1,0 +1,122 @@
+[
+  {
+    "name": "maplebirch",
+    "comment": "maple-forest birch speciation A - tall signature birch, airy crown (warm-tinted by the maple_forest foliage_color)",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 18,
+    "height_max": 24,
+    "seed": 3601,
+    "count": 1,
+    "trunk_width": 1,
+    "trunk_shape": "sine",
+    "trunk_shape_params": { "period": 0.55, "amplitude": 0.12 },
+    "canopy": {
+      "start_angle": 114,
+      "squish": 1.3,
+      "mode": "trimmed",
+      "leaf_density": 0.86,
+      "branches": {
+        "prob_fn": "linear",
+        "prob_params": { "base_p": 0.04, "crown_p": 0.72 },
+        "length_fn": "sigmoid",
+        "length_params": { "max_len": 4, "steepness": 6.0 },
+        "azimuth": "random",
+        "elevation": 20,
+        "leaf_start_up": true,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.86,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -16,
+          "yaw_delta": 72,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "maplebirch",
+    "comment": "maple-forest birch speciation B - log-trunk birch, feathery top",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 20,
+    "height_max": 27,
+    "seed": 3602,
+    "count": 1,
+    "trunk_width": 1,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.2 },
+    "canopy": {
+      "start_angle": 112,
+      "squish": 1.3,
+      "mode": "trimmed",
+      "leaf_density": 0.84,
+      "branches": {
+        "prob_fn": "gaussian",
+        "prob_params": { "mean": 0.8, "std": 0.12 },
+        "length_fn": "sigmoid",
+        "length_params": { "max_len": 5, "steepness": 5.5 },
+        "azimuth": "random",
+        "elevation": 18,
+        "leaf_start_up": true,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.84,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -20,
+          "yaw_delta": 68,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  },
+  {
+    "name": "maplebirch",
+    "comment": "maple-forest birch speciation C - very tall, sparse crown",
+    "trunk": "minecraft:birch_log",
+    "leaves": "minecraft:birch_leaves",
+    "profile": "birch",
+    "height_min": 24,
+    "height_max": 31,
+    "seed": 3603,
+    "count": 1,
+    "trunk_width": 1,
+    "trunk_shape": "linear",
+    "trunk_shape_params": { "start": 1.0, "end": 0.8 },
+    "canopy": {
+      "start_angle": 110,
+      "squish": 1.4,
+      "mode": "trimmed",
+      "leaf_density": 0.82,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.5 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 5 },
+        "azimuth": "random",
+        "elevation": 16,
+        "leaf_start_up": true,
+        "cluster_radius": 2,
+        "cluster_mode": "trimmed",
+        "cluster_density": 0.82,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -18,
+          "yaw_delta": 70,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed"
+        }
+      }
+    }
+  }
+]

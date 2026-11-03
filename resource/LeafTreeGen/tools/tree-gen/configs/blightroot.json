@@ -1,0 +1,47 @@
+[
+  {
+    "name": "blightroot",
+    "comment": "blightroot - rare gnarled dark oak, sparse decayed canopy, wither roses at base",
+    "filenames": [
+      "blightroot_1",
+      "blightroot_2",
+      "blightroot_3",
+      "blightroot_4"
+    ],
+    "trunk": "minecraft:dark_oak_log",
+    "leaves": "minecraft:dark_oak_leaves",
+    "profile": "dark_oak",
+    "height_min": 8,
+    "height_max": 12,
+    "seed": 4300,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": {
+      "steepness": 3.5
+    },
+    "canopy": {
+      "start_angle": 100,
+      "squish": 0.6,
+      "mode": "density",
+      "leaf_density": 0.28
+    },
+    "decorators": [
+      {
+        "target": "trunk_base",
+        "block": "minecraft:wither_rose",
+        "chance": 0.35
+      },
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:brown_mushroom",
+        "chance": 0.05
+      },
+      {
+        "target": "canopy_top",
+        "block": "minecraft:dead_bush",
+        "chance": 0.08
+      }
+    ]
+  }
+]

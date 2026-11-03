@@ -1,0 +1,78 @@
+[
+  {
+    "name": "glowcap",
+    "comment": "glowcap understory - flat solid brown_mushroom cap, single shroomlight layer on the underside",
+    "filenames": [
+      "glowcap_small_1",
+      "glowcap_small_2",
+      "glowcap_small_3",
+      "glowcap_small_4"
+    ],
+    "trunk": "minecraft:mushroom_stem",
+    "leaves": "minecraft:brown_mushroom_block",
+    "profile": "dark_oak",
+    "height_min": 8,
+    "height_max": 12,
+    "seed": 4600,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "start_angle": 120,
+      "squish": 0.45,
+      "mode": "filled",
+      "leaf_density": 0.92
+    },
+    "decorators": [
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:glow_lichen",
+        "chance": 0.28
+      },
+      {
+        "target": "canopy_bottom",
+        "block": "minecraft:shroomlight",
+        "chance": 0.9
+      }
+    ]
+  },
+  {
+    "name": "glowcap",
+    "comment": "glowcap tall - wider solid brown_mushroom cap, single shroomlight layer on the underside, glow lichen drape",
+    "filenames": [
+      "glowcap_large_1",
+      "glowcap_large_2",
+      "glowcap_large_3",
+      "glowcap_large_4"
+    ],
+    "trunk": "minecraft:mushroom_stem",
+    "leaves": "minecraft:brown_mushroom_block",
+    "profile": "dark_oak",
+    "height_min": 14,
+    "height_max": 18,
+    "seed": 4601,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "start_angle": 115,
+      "squish": 0.4,
+      "mode": "filled",
+      "leaf_density": 0.94
+    },
+    "decorators": [
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:glow_lichen",
+        "chance": 0.32
+      },
+      {
+        "target": "canopy_bottom",
+        "block": "minecraft:shroomlight",
+        "chance": 0.9
+      }
+    ]
+  }
+]

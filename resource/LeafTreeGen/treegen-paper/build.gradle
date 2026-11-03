@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+}
+
+version = '1.1.0'
+
+dependencies {
+    implementation project(':resource:LeafTreeGen:treegen-common')
+    implementation(project(':bukkit:bukkit-common')) { transitive = false }
+    compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
+    implementation project(':commands-api')
+
+    testImplementation 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
+}
+
+jar {
+    archiveClassifier.set('dev')
+}
+
+test {
+    useJUnitPlatform()
+}

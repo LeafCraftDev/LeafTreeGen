@@ -1,0 +1,115 @@
+[
+  {
+    "name": "bamboo_jungle",
+    "comment": "bamboo jungle small - slim jungle tree ringed by bamboo shoots",
+    "trunk": "minecraft:jungle_log",
+    "leaves": "minecraft:jungle_leaves",
+    "profile": "jungle",
+    "height_min": 12,
+    "height_max": 18,
+    "seed": 6200,
+    "count": 5,
+    "trunk_width": 1,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 3.0 },
+    "canopy": {
+      "start_angle": 136,
+      "squish": 0.6,
+      "mode": "density",
+      "leaf_density": 0.82
+    },
+    "decorators": [
+      {
+        "target": "trunk_base",
+        "block": "minecraft:bamboo",
+        "chance": 0.6
+      }
+    ]
+  },
+  {
+    "name": "bamboo_jungle",
+    "comment": "bamboo jungle medium - branching jungle tree over a bamboo thicket",
+    "trunk": "minecraft:jungle_log",
+    "leaves": "minecraft:jungle_leaves",
+    "profile": "jungle",
+    "height_min": 20,
+    "height_max": 30,
+    "seed": 6201,
+    "count": 5,
+    "trunk_width": 2,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.5 },
+    "canopy": {
+      "start_angle": 134,
+      "squish": 0.58,
+      "mode": "density",
+      "leaf_density": 0.8,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 3.0 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 6 },
+        "azimuth": "random",
+        "elevation": 16,
+        "leaf_start_up": true,
+        "cluster_radius": 3,
+        "cluster_mode": "density",
+        "cluster_density": 0.8
+      }
+    },
+    "decorators": [
+      {
+        "target": "trunk_base",
+        "block": "minecraft:bamboo",
+        "chance": 0.7
+      }
+    ]
+  },
+  {
+    "name": "bamboo_jungle",
+    "comment": "bamboo jungle tall - taller jungle giant, dense bamboo base",
+    "trunk": "minecraft:jungle_log",
+    "leaves": "minecraft:jungle_leaves",
+    "profile": "jungle",
+    "height_min": 32,
+    "height_max": 44,
+    "seed": 6202,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.12 },
+    "canopy": {
+      "start_angle": 132,
+      "squish": 0.55,
+      "mode": "density",
+      "leaf_density": 0.78,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 3.5 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 7 },
+        "azimuth": "random",
+        "elevation": 15,
+        "leaf_start_up": true,
+        "cluster_radius": 3,
+        "cluster_mode": "density",
+        "cluster_density": 0.78,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -22,
+          "yaw_delta": 58,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed"
+        }
+      }
+    },
+    "decorators": [
+      {
+        "target": "trunk_base",
+        "block": "minecraft:bamboo",
+        "chance": 0.8
+      }
+    ]
+  }
+]

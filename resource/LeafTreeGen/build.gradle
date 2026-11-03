@@ -1,0 +1,7 @@
+// LeafTreeGen - container (aggregator) project only.
+//
+// The installable multi-loader artifact is produced by
+// `:resource:LeafTreeGen:treegen-plugin` as `LeafTreeGen-<version>.jar`.
+// Disable the empty container jar so only the shaded assembly carries the
+// brand name.
+jar.enabled = false

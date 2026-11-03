@@ -1,0 +1,194 @@
+[CENTER][SIZE=7][B][COLOR=#2e7d32]Leaf[/COLOR][COLOR=#66bb6a]Tree[/COLOR][COLOR=#8d6e63]Gen[/COLOR][/B][/SIZE]
+
+[SIZE=4][I][COLOR=#558b2f]Procedural, biome-aware custom trees that generate through vanilla worldgen.[/COLOR][/I][/SIZE][/CENTER]
+
+LeafTreeGen adds dozens of custom tree species. Trees are mathematically defined in JSON and baked into vanilla [ICODE].nbt[/ICODE] structure templates at startup, then added to jigsaw template pools so the game's own worldgen handles placement. No runtime block-placement listeners.
+
+Made as a cross-platform utility based on the Python code I originally wrote for my personal Iris world using [ICODE].iob[/ICODE] files. Iris now adopts my procedural engine in its latest builds.
+
+I've reworked it so you can optionally run it once for datapack ([ICODE].nbt[/ICODE]-based) generation, or keep it around for its ability to manage procedural generation and custom saplings.
+
+[CENTER][COLOR=#9e9e9e]----------------------------------------[/COLOR][/CENTER]
+
+[SIZE=5][B][COLOR=#e91e63]Screenshots[/COLOR][/B][/SIZE]
+
+[CENTER][IMG]https://raw.githubusercontent.com/DailyStruggle/leaf-treegen/main/docs/images/cherry-grove-giant.png[/IMG]
+[I]Cherry Grove Giant - a towering cherry-blossom giant anchors its matching biome above a grove of smaller cherry trees.[/I]
+
+[IMG]https://raw.githubusercontent.com/DailyStruggle/leaf-treegen/main/docs/images/dark-forest-canopy.png[/IMG]
+[I]Dark forest canopy - dense overlapping high canopies with scattered giant mushrooms, viewed from above the treeline.[/I]
+
+[IMG]https://raw.githubusercontent.com/DailyStruggle/leaf-treegen/main/docs/images/dark-forest-mushroom.png[/IMG]
+[I]Dark Forest Mushroom.[/I]
+
+[IMG]https://raw.githubusercontent.com/DailyStruggle/leaf-treegen/main/docs/images/custom-savanna-trees.png[/IMG]
+[I]Custom savanna trees.[/I]
+
+[IMG]https://raw.githubusercontent.com/DailyStruggle/leaf-treegen/main/docs/images/christmas-tree.png[/IMG]
+[I]Christmas Tree - all trees are placeable via NBT-tagged saplings.[/I][/CENTER]
+
+[CENTER][COLOR=#9e9e9e]----------------------------------------[/COLOR][/CENTER]
+
+[SIZE=5][B][COLOR=#2e7d32]Features[/COLOR][/B][/SIZE]
+
+[LIST]
+[*][B]Biome-matched species[/B] - savanna acacias, dark-forest canopies, glacier pines, cherry groves, spiral-crown forests, and rainbow groves, mapped to the biomes they suit
+[*][B]Procedural engine[/B] - trees are built in Java from per-species parameters: height, trunk shape, lean angle, and canopy layers
+[*][B]Jigsaw worldgen[/B] - the plugin writes a vanilla worldgen datapack on first load and lets Minecraft's structure system place the trees
+[*][B]Plantable saplings[/B] - [ICODE]/leaftree give[/ICODE] hands out NBT-tagged saplings that grow into a random variant when planted in a valid biome
+[*][B]Reload command[/B] - [ICODE]/leaftree reload[/ICODE] rebakes all variants and regenerates the datapack
+[*][B]Server-friendly placement[/B] - large trees are placed across multiple ticks under a per-tick budget to keep the main thread responsive
+[*][B]Multi-platform[/B] - one jar runs on Paper, Folia, Fabric, and NeoForge with the same features (worldgen, saplings, and the [ICODE]/leaftree[/ICODE] command) everywhere
+[/LIST]
+
+[CENTER][COLOR=#9e9e9e]----------------------------------------[/COLOR][/CENTER]
+
+[SIZE=5][B][COLOR=#1565c0]Species Highlights[/COLOR][/B][/SIZE]
+
+[TABLE]
+[TR]
+[TH]Category[/TH]
+[TH]Examples[/TH]
+[/TR]
+[TR]
+[TD][COLOR=#43a047][B]Temperate[/B][/COLOR][/TD]
+[TD]Forest, Birch Forest, Old-Growth Birch, Maple-Birch Giants, Ashwood[/TD]
+[/TR]
+[TR]
+[TD][COLOR=#e91e63][B]Tropical[/B][/COLOR][/TD]
+[TD]Jungle, Cherry Grove, Jacaranda Grove[/TD]
+[/TR]
+[TR]
+[TD][COLOR=#039be5][B]Cold[/B][/COLOR][/TD]
+[TD]Taiga, Old-Growth Pine Taiga, Glacier Pine[/TD]
+[/TR]
+[TR]
+[TD][COLOR=#8e24aa][B]Dark & Exotic[/B][/COLOR][/TD]
+[TD]Dark Forest Giants, Spiral-Crown Forest, Rainbow Grove, Glowcap[/TD]
+[/TR]
+[/TABLE]
+
+[SPOILER="Full biome tree map"]
+[TABLE]
+[TR]
+[TH]Biome[/TH]
+[TH]Species[/TH]
+[TH]Iconic shape[/TH]
+[TH]Role[/TH]
+[/TR]
+[TR][TD][ICODE]forest[/ICODE][/TD][TD][ICODE]forest[/ICODE][/TD][TD]Rounded oak, mid to large[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]flower_forest[/ICODE][/TD][TD][ICODE]oak-small-mid[/ICODE][/TD][TD]Small-to-mid rounded oak, sporadic[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]plains[/ICODE][/TD][TD][ICODE]oak-small-mid[/ICODE][/TD][TD]Sparse small-to-mid oak[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]meadow[/ICODE][/TD][TD][ICODE]oak-small-mid[/ICODE][/TD][TD]Sparse small-to-mid oak[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]meadow[/ICODE][/TD][TD][ICODE]meadow-azalea[/ICODE][/TD][TD]Small oak trunk with azalea crown[/TD][TD]Sprinkled accent[/TD][/TR]
+[TR][TD][ICODE]meadow[/ICODE][/TD][TD][ICODE]rainbow-grove[/ICODE][/TD][TD]Birch trunk with multi-hue canopy[/TD][TD]Rare landmark[/TD][/TR]
+[TR][TD][ICODE]dark_forest[/ICODE][/TD][TD][ICODE]glowcap[/ICODE][/TD][TD]Lit brown-mushroom shrub[/TD][TD]Understory[/TD][/TR]
+[TR][TD][ICODE]dark_forest[/ICODE][/TD][TD][ICODE]dark-forest-floor-lights[/ICODE][/TD][TD]Tiny shroomlight glow shrooms[/TD][TD]Floor litter[/TD][/TR]
+[TR][TD][ICODE]dark_forest[/ICODE][/TD][TD][ICODE]dark-forest-mids[/ICODE][/TD][TD]Small-to-medium twisted dark oak[/TD][TD]Midstory[/TD][/TR]
+[TR][TD][ICODE]dark_forest[/ICODE][/TD][TD][ICODE]dark-forest-megas[/ICODE][/TD][TD]Titan dark oak with massive canopy[/TD][TD]Canopy[/TD][/TR]
+[TR][TD][ICODE]birch_forest[/ICODE][/TD][TD][ICODE]birch-forest[/ICODE][/TD][TD]Tall slender white birch[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]old_growth_birch_forest[/ICODE][/TD][TD][ICODE]old-growth-birch-forest[/ICODE][/TD][TD]Towering old-growth birch[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]old_growth_birch_forest[/ICODE][/TD][TD][ICODE]maple-birch-giants[/ICODE][/TD][TD]Giant maple-and-birch landmark[/TD][TD]Rare landmark[/TD][/TR]
+[TR][TD][ICODE]taiga[/ICODE][/TD][TD][ICODE]taiga[/ICODE][/TD][TD]Conical spruce[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]snowy_taiga[/ICODE][/TD][TD][ICODE]evergreen[/ICODE][/TD][TD]Snow-dusted conical spruce[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]snowy_taiga[/ICODE][/TD][TD][ICODE]christmas-tree[/ICODE][/TD][TD]Festive decorated spruce with ornaments[/TD][TD]Very rare landmark[/TD][/TR]
+[TR][TD][ICODE]old_growth_pine_taiga[/ICODE][/TD][TD][ICODE]old-growth-pine-taiga[/ICODE][/TD][TD]Tall bare-trunked pine[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]old_growth_spruce_taiga[/ICODE][/TD][TD][ICODE]old-growth-pine-taiga[/ICODE][/TD][TD]Tall bare-trunked pine[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]snowy_plains[/ICODE][/TD][TD][ICODE]glacierpine[/ICODE][/TD][TD]Frost-laden spruce with icicle tips[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]ice_spikes[/ICODE][/TD][TD][ICODE]glacierpine[/ICODE][/TD][TD]Frost-laden spruce with icicle tips[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]grove[/ICODE][/TD][TD][ICODE]glacierpine[/ICODE][/TD][TD]Frost-laden spruce with icicle tips[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]snowy_slopes[/ICODE][/TD][TD][ICODE]glacierpine[/ICODE][/TD][TD]Frost-laden spruce with icicle tips[/TD][TD]Sparse[/TD][/TR]
+[TR][TD][ICODE]frozen_peaks[/ICODE][/TD][TD][ICODE]glacierpine[/ICODE][/TD][TD]Frost-laden spruce with icicle tips[/TD][TD]Sparse[/TD][/TR]
+[TR][TD][ICODE]jagged_peaks[/ICODE][/TD][TD][ICODE]glacierpine[/ICODE][/TD][TD]Frost-laden spruce with icicle tips[/TD][TD]Sparse[/TD][/TR]
+[TR][TD][ICODE]jungle[/ICODE][/TD][TD][ICODE]jungle[/ICODE][/TD][TD]Jungle trees, small to giant[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]sparse_jungle[/ICODE][/TD][TD][ICODE]jungle[/ICODE][/TD][TD]Jungle trees, small to giant[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]bamboo_jungle[/ICODE][/TD][TD][ICODE]bamboo-jungle[/ICODE][/TD][TD]Jungle trees ringed by bamboo[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]savanna[/ICODE][/TD][TD][ICODE]savanna[/ICODE][/TD][TD]Flat-topped leaning acacia[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]savanna_plateau[/ICODE][/TD][TD][ICODE]savanna[/ICODE][/TD][TD]Flat-topped leaning acacia[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]windswept_savanna[/ICODE][/TD][TD][ICODE]savanna[/ICODE][/TD][TD]Flat-topped leaning acacia[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]cherry_grove[/ICODE][/TD][TD][ICODE]cherry-grove[/ICODE][/TD][TD]Layered pink blossom crown[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]cherry_grove[/ICODE][/TD][TD][ICODE]jacaranda-grove[/ICODE][/TD][TD]Giant weeping cherry-wood jacaranda[/TD][TD]Rare landmark[/TD][/TR]
+[TR][TD][ICODE]windswept_hills[/ICODE][/TD][TD][ICODE]ashwood[/ICODE][/TD][TD]Gaunt gray dead pale-oak with cobwebs[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]windswept_forest[/ICODE][/TD][TD][ICODE]ashwood[/ICODE][/TD][TD]Gaunt gray dead pale-oak with cobwebs[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]windswept_gravelly_hills[/ICODE][/TD][TD][ICODE]ashwood[/ICODE][/TD][TD]Gaunt gray dead pale-oak with cobwebs[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]swamp[/ICODE][/TD][TD][ICODE]swamp[/ICODE][/TD][TD]Vine-draped weeping oak + mangrove[/TD][TD]Primary[/TD][/TR]
+[TR][TD][ICODE]mangrove_swamp[/ICODE][/TD][TD][ICODE]swamp[/ICODE][/TD][TD]Vine-draped weeping oak + mangrove[/TD][TD]Primary[/TD][/TR]
+[/TABLE]
+[/SPOILER]
+
+[CENTER][COLOR=#9e9e9e]----------------------------------------[/COLOR][/CENTER]
+
+[SIZE=5][B][COLOR=#ef6c00]Commands[/COLOR][/B][/SIZE]
+
+[TABLE]
+[TR]
+[TH]Command[/TH]
+[TH]Description[/TH]
+[/TR]
+[TR]
+[TD][ICODE]/leaftree generate species=<id>[/ICODE][/TD]
+[TD]Place a tree at your cursor (admin test)[/TD]
+[/TR]
+[TR]
+[TD][ICODE]/leaftree give species=<id> [player] [amount][/ICODE][/TD]
+[TD]Hand out custom saplings[/TD]
+[/TR]
+[TR]
+[TD][ICODE]/leaftree list [species=<id>][/ICODE][/TD]
+[TD]List registered species or variants[/TD]
+[/TR]
+[TR]
+[TD][ICODE]/leaftree reload[/ICODE][/TD]
+[TD]Apply config changes and regenerate the datapack[/TD]
+[/TR]
+[/TABLE]
+
+Requires the [ICODE]leaftreegen.admin[/ICODE] permission node.
+
+[CENTER][COLOR=#9e9e9e]----------------------------------------[/COLOR][/CENTER]
+
+[SIZE=5][B][COLOR=#6a1b9a]Configuration[/COLOR][/B][/SIZE]
+
+Species are defined as JSON files in the [ICODE]species/[/ICODE] folder. Biome assignments and placement tuning (spacing, separation, salt) live in [ICODE]config.yml[/ICODE], with per-species overrides.
+
+[CODE=yaml]
+generation-mode: DATAPACK   # DATAPACK | PROCEDURAL | BOTH | NONE
+
+placement:
+  glacierpine:
+    spacing: 6
+    separation: 3
+    biomes:
+      - minecraft:snowy_taiga
+      - minecraft:grove
+[/CODE]
+
+[CODE=json]
+{
+  "name": "glacierpine",
+  "procedural": {
+    "trunk-block": "minecraft:spruce_log",
+    "leaf-block": "minecraft:spruce_leaves",
+    "height-min": 10,
+    "height-max": 18,
+    "trunk-shape": "LINEAR",
+    "canopy": [
+      { "yOffset": 0, "radius": 4 },
+      { "yOffset": 3, "radius": 3 },
+      { "yOffset": 6, "radius": 2 }
+    ]
+  }
+}
+[/CODE]
+
+[SIZE=5][B][COLOR=#00838f]Requirements[/COLOR][/B][/SIZE]
+
+[LIST]
+[*]Java 25+
+[*]One of:
+[LIST]
+[*]Paper or Folia 1.21+
+[*]Fabric 26.1+ (Fabric Loader 0.18.4+, Fabric API)
+[*]NeoForge 26.1+
+[/LIST]
+[/LIST]

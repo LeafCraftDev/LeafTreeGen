@@ -1,0 +1,84 @@
+[
+  {
+    "name": "glowsprout",
+    "comment": "tiny floor glow shroom - single stem with a small shroomlight-lit cap, litters the dark forest floor",
+    "trunk": "minecraft:mushroom_stem",
+    "leaves": "minecraft:brown_mushroom_block",
+    "profile": "dark_oak",
+    "height_min": 1,
+    "height_max": 2,
+    "seed": 4700,
+    "count": 4,
+    "weight": 60,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "start_angle": 120,
+      "squish": 0.5,
+      "mode": "filled",
+      "leaf_density": 0.95
+    },
+    "decorators": [
+      {
+        "target": "canopy_bottom",
+        "block": "minecraft:shroomlight",
+        "chance": 1.0
+      }
+    ]
+  },
+  {
+    "name": "glowsprout",
+    "comment": "tiny floor glow shroom - slightly taller stem with glow lichen drape",
+    "trunk": "minecraft:mushroom_stem",
+    "leaves": "minecraft:brown_mushroom_block",
+    "profile": "dark_oak",
+    "height_min": 2,
+    "height_max": 3,
+    "seed": 4701,
+    "count": 4,
+    "weight": 40,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "start_angle": 118,
+      "squish": 0.45,
+      "mode": "filled",
+      "leaf_density": 0.95
+    },
+    "decorators": [
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:glow_lichen",
+        "chance": 0.3
+      },
+      {
+        "target": "canopy_bottom",
+        "block": "minecraft:shroomlight",
+        "chance": 1.0
+      }
+    ]
+  },
+  {
+    "name": "glowtuft",
+    "comment": "tiny glowing leaf tuft - a one-block flickering shroomlight nub for sparse floor variety",
+    "trunk": "minecraft:mushroom_stem",
+    "leaves": "minecraft:shroomlight",
+    "profile": "dark_oak",
+    "height_min": 1,
+    "height_max": 1,
+    "seed": 4702,
+    "count": 3,
+    "weight": 20,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "start_angle": 130,
+      "squish": 0.6,
+      "mode": "filled",
+      "leaf_density": 0.9
+    }
+  }
+]

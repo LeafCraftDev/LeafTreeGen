@@ -1,0 +1,25 @@
+plugins {
+    id 'java-library'
+}
+
+version = '1.1.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+dependencies {
+    compileOnly 'com.google.code.gson:gson:2.11.0'
+    api project(':server-api')
+    api project(':yaml-api')
+    api project(':commands-api')
+    api project(':predict-api')
+
+    testImplementation 'com.google.code.gson:gson:2.11.0'
+    testImplementation project(':anvil-api')
+}
+
+test {
+    useJUnitPlatform()
+}

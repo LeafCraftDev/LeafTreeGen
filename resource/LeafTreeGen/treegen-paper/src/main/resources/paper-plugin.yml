@@ -1,0 +1,20 @@
+name: LeafTreeGen
+version: 1.1.0
+main: net.leaf.treegen.paper.PaperLeafTreeGenPlugin
+# The bootstrapper runs before worlds and their datapacks are loaded, so the
+# generated worldgen datapacks are written to disk before datapack discovery
+# and are applied on the same boot (no extra restart needed).
+bootstrapper: net.leaf.treegen.paper.PaperBootstrap
+api-version: '1.21'
+folia-supported: true
+description: Multichannel tree generator (Paper platform).
+# NOTE: Paper plugins (paper-plugin.yml) do not support YAML-based command
+# declarations. The /leaftree command is registered programmatically in
+# PaperLeafTreeGenPlugin#registerCommand via the live server command map.
+permissions:
+  leaftreegen.admin:
+    description: Allows administrative access to LeafTreeGen.
+    default: op
+  leaftreegen.sapling:
+    description: Allows planting special tree saplings.
+    default: true

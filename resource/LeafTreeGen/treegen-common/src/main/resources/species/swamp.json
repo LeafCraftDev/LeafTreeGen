@@ -1,0 +1,126 @@
+[
+  {
+    "name": "weeping_oak",
+    "comment": "weeping oak A - leaning oak draped in vines",
+    "trunk": "minecraft:oak_log",
+    "leaves": "minecraft:oak_leaves",
+    "profile": "oak",
+    "height_min": 8,
+    "height_max": 12,
+    "seed": 6300,
+    "count": 5,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "lean_azimuth": 90,
+    "lean_angle": 16,
+    "trunk_curve_fn": "parabolic",
+    "trunk_curve_params": {},
+    "canopy": {
+      "start_angle": 120,
+      "squish": 0.82,
+      "mode": "density",
+      "leaf_density": 0.86
+    },
+    "decorators": [
+      {
+        "target": "canopy_bottom",
+        "block": "minecraft:vine",
+        "chance": 0.35
+      },
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:vine",
+        "chance": 0.12
+      }
+    ]
+  },
+  {
+    "name": "weeping_oak",
+    "comment": "weeping oak B - broad wide-crowned oak with hanging vines",
+    "trunk": "minecraft:oak_log",
+    "leaves": "minecraft:oak_leaves",
+    "profile": "oak",
+    "height_min": 12,
+    "height_max": 17,
+    "seed": 6301,
+    "count": 5,
+    "trunk_width": 2,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.5 },
+    "canopy": {
+      "start_angle": 116,
+      "squish": 0.92,
+      "mode": "density",
+      "leaf_density": 0.84,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.0 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 5 },
+        "azimuth": "random",
+        "elevation": 14,
+        "leaf_start_up": true,
+        "cluster_radius": 3,
+        "cluster_mode": "density",
+        "cluster_density": 0.84
+      }
+    },
+    "decorators": [
+      {
+        "target": "canopy_bottom",
+        "block": "minecraft:vine",
+        "chance": 0.4
+      },
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:vine",
+        "chance": 0.12
+      }
+    ]
+  },
+  {
+    "name": "mangrove",
+    "comment": "mangrove - mangrove-wood swamp tree with rooted base and hanging vines",
+    "trunk": "minecraft:mangrove_log",
+    "leaves": "minecraft:mangrove_leaves",
+    "profile": "oak",
+    "height_min": 10,
+    "height_max": 15,
+    "seed": 6302,
+    "count": 5,
+    "trunk_width": 1,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.2 },
+    "canopy": {
+      "start_angle": 118,
+      "squish": 0.88,
+      "mode": "density",
+      "leaf_density": 0.85,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.2 },
+        "length_fn": "linear",
+        "length_params": { "base": 2, "crown": 4 },
+        "azimuth": "random",
+        "elevation": 16,
+        "leaf_start_up": true,
+        "cluster_radius": 2,
+        "cluster_mode": "density",
+        "cluster_density": 0.84
+      }
+    },
+    "decorators": [
+      {
+        "target": "trunk_base",
+        "block": "minecraft:mangrove_roots",
+        "chance": 0.6
+      },
+      {
+        "target": "canopy_bottom",
+        "block": "minecraft:vine",
+        "chance": 0.3
+      }
+    ]
+  }
+]

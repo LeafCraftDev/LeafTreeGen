@@ -1,0 +1,60 @@
+[
+  {
+    "name": "evergreen",
+    "comment": "evergreen medium - full conical snow-laden spruce. Volume-layer crown (no branches) so the cone fills from the base up like the common glacierpine, instead of a tiny branch hat perched on a bare tapering trunk. Plain snowy evergreen with only a snow cap.",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "secondary_leaves": "minecraft:snow_block",
+    "secondary_leaf_fraction": 0.15,
+    "profile": "spruce",
+    "height_min": 16,
+    "height_max": 22,
+    "seed": 5200,
+    "count": 6,
+    "trunk_width": 2,
+    "trunk_shape": "linear",
+    "trunk_shape_params": { "start": 1.0, "end": 0.7 },
+    "canopy": {
+      "start_angle": 130,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.86
+    },
+    "decorators": [
+      {
+        "target": "canopy_top",
+        "block": "minecraft:snow[layers=2]",
+        "chance": 0.6
+      }
+    ]
+  },
+  {
+    "name": "evergreen",
+    "comment": "evergreen tall - towering full conical snow-laden spruce. Same volume-layer crown (no branches) as the medium so the deep cone fills from the base rather than capping a thin trunk. Plain snowy evergreen with only a snow cap.",
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:spruce_leaves",
+    "secondary_leaves": "minecraft:snow_block",
+    "secondary_leaf_fraction": 0.18,
+    "profile": "spruce",
+    "height_min": 26,
+    "height_max": 36,
+    "seed": 5202,
+    "count": 6,
+    "trunk_width": 3,
+    "trunk_shape": "log",
+    "trunk_shape_params": { "base": 2.0 },
+    "canopy": {
+      "start_angle": 126,
+      "squish": 1.0,
+      "mode": "trimmed",
+      "leaf_density": 0.84
+    },
+    "decorators": [
+      {
+        "target": "canopy_top",
+        "block": "minecraft:snow[layers=2]",
+        "chance": 0.65
+      }
+    ]
+  }
+]

@@ -1,0 +1,106 @@
+[
+  {
+    "name": "cloudcap",
+    "comment": "cloudcap small - tall slim trunk, compact azalea sphere, floating islands",
+    "filenames": [
+      "cloudcap_small_1",
+      "cloudcap_small_2",
+      "cloudcap_small_3"
+    ],
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:azalea_leaves",
+    "secondary_leaves": "minecraft:flowering_azalea_leaves",
+    "secondary_leaf_fraction": 0.22,
+    "profile": "jungle",
+    "height_min": 10,
+    "height_max": 12,
+    "seed": 4500,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "layers": [
+        {
+          "y_offset": 10,
+          "radius": 3.5
+        },
+        {
+          "y_offset": 12,
+          "radius": 4.5
+        },
+        {
+          "y_offset": 14,
+          "radius": 4.0
+        },
+        {
+          "y_offset": 16,
+          "radius": 2.5
+        }
+      ],
+      "start_angle": 60,
+      "squish": 0.8,
+      "mode": "density",
+      "leaf_density": 0.86
+    },
+    "decorators": [
+      {
+        "target": "canopy_top",
+        "block": "minecraft:moss_block",
+        "chance": 0.1
+      }
+    ]
+  },
+  {
+    "name": "cloudcap",
+    "comment": "cloudcap tall - taller trunk, larger denser sphere, more flowering mix",
+    "filenames": [
+      "cloudcap_large_1",
+      "cloudcap_large_2",
+      "cloudcap_large_3"
+    ],
+    "trunk": "minecraft:spruce_log",
+    "leaves": "minecraft:azalea_leaves",
+    "secondary_leaves": "minecraft:flowering_azalea_leaves",
+    "secondary_leaf_fraction": 0.28,
+    "profile": "jungle",
+    "height_min": 13,
+    "height_max": 16,
+    "seed": 4501,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "layers": [
+        {
+          "y_offset": 13,
+          "radius": 4.0
+        },
+        {
+          "y_offset": 15,
+          "radius": 5.5
+        },
+        {
+          "y_offset": 17,
+          "radius": 5.5
+        },
+        {
+          "y_offset": 19,
+          "radius": 3.5
+        }
+      ],
+      "start_angle": 60,
+      "squish": 0.8,
+      "mode": "density",
+      "leaf_density": 0.88
+    },
+    "decorators": [
+      {
+        "target": "canopy_top",
+        "block": "minecraft:moss_block",
+        "chance": 0.12
+      }
+    ]
+  }
+]

@@ -1,0 +1,108 @@
+[
+  {
+    "name": "lavatree",
+    "comment": "DEPRECATED - implicitly superseded by the Iris 4.0 cave-carving method. This baked obsidian-encased lava-object was a workaround to fake a carved lava pocket/volcano under Iris 3.9; the Iris 4.0 noise-field carver (a surface-breaking lava conduit via caveProfile + allowLava + a dimension carving[] band, see docs/design/IRIS-V4-CARVING.md) now produces real carved lava terrain, so this object hack is no longer the intended approach. Kept in-repo unreferenced for history/reference only; do not wire into new biomes. Inverted obsidian-encased lava tree for the Frostpeak Caldera. A wide ROUND lava trunk with many lava branches; the whole lava mass (trunk + branches) is fully sheathed in obsidian by the 'encase' post-process (every exposed lava face -> obsidian), so the trunk reads as a rounded obsidian-skinned column with a lava core. invert_y flips it so it drives DOWN into the ground as a buried lava root-mass. Placed very densely so neighbouring trunks overlap and their obsidian sheaths merge into irregular surface crusts. (Fire roots dropped: Iris does not tick placed fire so it just floats.)",
+    "filenames": [
+      "lavatree1",
+      "lavatree2",
+      "lavatree3"
+    ],
+    "trunk": "minecraft:lava[level=0]",
+    "leaves": "minecraft:lava[level=0]",
+    "profile": "oak",
+    "height_min": 16,
+    "height_max": 24,
+    "seed": 7777,
+    "count": 3,
+    "trunk_width": 12,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 4.0 },
+    "trunk_round": true,
+    "invert_y": true,
+    "roots": true,
+    "root_block": "minecraft:void_air",
+    "encase": "minecraft:obsidian",
+    "encase_targets": ["minecraft:lava"],
+    "encase_open_top": true,
+    "encase_top_variation": 3,
+    "canopy": {
+      "mode": "density",
+      "leaf_density": 1.0,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 1.0 },
+        "length_fn": "linear",
+        "length_params": { "base": 4, "crown": 9 },
+        "azimuth": "random",
+        "elevation": 40,
+        "leaf_start_up": false,
+        "cluster_radius": 3,
+        "cluster_mode": "density",
+        "cluster_density": 1.0,
+        "sub_branches": {
+          "count": 3,
+          "pitch_delta": 8,
+          "yaw_delta": 40,
+          "length_scale": 0.8,
+          "cluster_radius": 1,
+          "cluster_mode": "density",
+          "cluster_density": 1.0
+        }
+      }
+    }
+  },
+  {
+    "name": "lavatreebig",
+    "comment": "DEPRECATED - implicitly superseded by the Iris 4.0 cave-carving method (see docs/design/IRIS-V4-CARVING.md and the 'lavatree' entry above). Kept in-repo unreferenced for history/reference only; do not wire into new biomes. Large summit centerpiece variant of the lava tree (wide ~32 trunk). One placed per Frostpeak summit at 100% chance. Same obsidian-encased, round, inverted, void_air-root design as the small lavatree.",
+    "filenames": [
+      "lavatreebig1",
+      "lavatreebig2",
+      "lavatreebig3"
+    ],
+    "trunk": "minecraft:lava[level=0]",
+    "leaves": "minecraft:lava[level=0]",
+    "profile": "oak",
+    "height_min": 64,
+    "height_max": 90,
+    "seed": 9111,
+    "count": 3,
+    "trunk_width": 30,
+    "trunk_shape": "sigmoid",
+    "trunk_shape_params": { "steepness": 4.0 },
+    "trunk_round": true,
+    "invert_y": true,
+    "roots": true,
+    "root_block": "minecraft:void_air",
+    "encase": "minecraft:obsidian",
+    "encase_targets": ["minecraft:lava"],
+    "encase_open_top": true,
+    "encase_top_variation": 4,
+    "clear_cone_height": 14,
+    "clear_cone_expand": 2.2,
+    "canopy": {
+      "mode": "density",
+      "leaf_density": 1.0,
+      "branches": {
+        "prob_fn": "constant",
+        "prob_params": { "p": 1.0 },
+        "length_fn": "linear",
+        "length_params": { "base": 8, "crown": 20 },
+        "azimuth": "random",
+        "elevation": 40,
+        "leaf_start_up": false,
+        "cluster_radius": 5,
+        "cluster_mode": "density",
+        "cluster_density": 1.0,
+        "sub_branches": {
+          "count": 4,
+          "pitch_delta": 8,
+          "yaw_delta": 40,
+          "length_scale": 0.8,
+          "cluster_radius": 2,
+          "cluster_mode": "density",
+          "cluster_density": 1.0
+        }
+      }
+    }
+  }
+]

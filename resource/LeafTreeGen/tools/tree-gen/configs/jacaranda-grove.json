@@ -1,0 +1,194 @@
+[
+  {
+    "name": "jacaranda",
+    "comment": "jacaranda giant A - weeping umbrella crown, cherry speciation",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 24,
+    "height_max": 30,
+    "seed": 3450,
+    "count": 1,
+    "trunk_width": 3,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.26, "floor": 0.6 },
+    "lean_azimuth": 60,
+    "lean_angle": 8,
+    "trunk_curve_fn": "sigmoid",
+    "trunk_curve_params": { "steepness": 6.0 },
+    "canopy": {
+      "start_angle": 132,
+      "squish": 0.42,
+      "mode": "density",
+      "leaf_density": 0.9,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.2 },
+        "length_fn": "linear",
+        "length_params": { "base": 6, "crown": 16 },
+        "azimuth": "random",
+        "elevation": 8,
+        "leaf_start_up": true,
+        "cluster_radius": 5,
+        "cluster_mode": "density",
+        "cluster_density": 0.9,
+        "sub_branches": {
+          "count": 3,
+          "pitch_delta": -28,
+          "yaw_delta": 56,
+          "length_scale": 0.6,
+          "cluster_radius": 3,
+          "cluster_mode": "density",
+          "cluster_density": 0.85
+        }
+      }
+    },
+    "decorators": [
+      { "target": "trunk_base", "block": "minecraft:pink_petals", "chance": 0.45 }
+    ]
+  },
+  {
+    "name": "jacaranda",
+    "comment": "jacaranda giant B - taller, broad drooping canopy",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 30,
+    "height_max": 38,
+    "seed": 3451,
+    "count": 1,
+    "trunk_width": 4,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.3, "floor": 0.62 },
+    "lean_azimuth": 200,
+    "lean_angle": 10,
+    "trunk_curve_fn": "sigmoid",
+    "trunk_curve_params": { "steepness": 6.5 },
+    "canopy": {
+      "start_angle": 136,
+      "squish": 0.4,
+      "mode": "density",
+      "leaf_density": 0.9,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.4 },
+        "length_fn": "linear",
+        "length_params": { "base": 7, "crown": 20 },
+        "azimuth": "random",
+        "elevation": 6,
+        "leaf_start_up": true,
+        "cluster_radius": 6,
+        "cluster_mode": "density",
+        "cluster_density": 0.9,
+        "sub_branches": {
+          "count": 3,
+          "pitch_delta": -30,
+          "yaw_delta": 54,
+          "length_scale": 0.62,
+          "cluster_radius": 4,
+          "cluster_mode": "density",
+          "cluster_density": 0.85
+        }
+      }
+    },
+    "decorators": [
+      { "target": "trunk_base", "block": "minecraft:pink_petals", "chance": 0.45 }
+    ]
+  },
+  {
+    "name": "jacaranda",
+    "comment": "jacaranda giant C - upright lean, cascading crown",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 34,
+    "height_max": 44,
+    "seed": 3452,
+    "count": 1,
+    "trunk_width": 4,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.32, "floor": 0.6 },
+    "lean_azimuth": 45,
+    "lean_angle": 8,
+    "trunk_curve_fn": "sigmoid",
+    "trunk_curve_params": { "steepness": 6.0 },
+    "canopy": {
+      "start_angle": 138,
+      "squish": 0.4,
+      "mode": "density",
+      "leaf_density": 0.9,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.3 },
+        "length_fn": "linear",
+        "length_params": { "base": 8, "crown": 22 },
+        "azimuth": "random",
+        "elevation": 6,
+        "leaf_start_up": true,
+        "cluster_radius": 6,
+        "cluster_mode": "density",
+        "cluster_density": 0.9,
+        "sub_branches": {
+          "count": 4,
+          "pitch_delta": -30,
+          "yaw_delta": 52,
+          "length_scale": 0.62,
+          "cluster_radius": 4,
+          "cluster_mode": "density",
+          "cluster_density": 0.85
+        }
+      }
+    },
+    "decorators": [
+      { "target": "trunk_base", "block": "minecraft:pink_petals", "chance": 0.45 }
+    ]
+  },
+  {
+    "name": "jacaranda",
+    "comment": "jacaranda giant D - tallest upright landmark, enormous weeping crown",
+    "trunk": "minecraft:cherry_log",
+    "leaves": "minecraft:cherry_leaves",
+    "profile": "cherry",
+    "height_min": 44,
+    "height_max": 54,
+    "seed": 3453,
+    "count": 1,
+    "trunk_width": 5,
+    "trunk_shape": "parabolic",
+    "trunk_shape_params": { "peak_offset": 0.34, "floor": 0.64 },
+    "lean_azimuth": 90,
+    "lean_angle": 8,
+    "trunk_curve_fn": "sigmoid",
+    "trunk_curve_params": { "steepness": 7.0 },
+    "canopy": {
+      "start_angle": 140,
+      "squish": 0.38,
+      "mode": "density",
+      "leaf_density": 0.9,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": { "exponent": 2.5 },
+        "length_fn": "linear",
+        "length_params": { "base": 9, "crown": 26 },
+        "azimuth": "random",
+        "elevation": 5,
+        "leaf_start_up": true,
+        "cluster_radius": 7,
+        "cluster_mode": "density",
+        "cluster_density": 0.9,
+        "sub_branches": {
+          "count": 4,
+          "pitch_delta": -32,
+          "yaw_delta": 50,
+          "length_scale": 0.65,
+          "cluster_radius": 5,
+          "cluster_mode": "density",
+          "cluster_density": 0.85
+        }
+      }
+    },
+    "decorators": [
+      { "target": "trunk_base", "block": "minecraft:pink_petals", "chance": 0.45 }
+    ]
+  }
+]

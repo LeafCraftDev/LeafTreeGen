@@ -1,0 +1,187 @@
+[
+  {
+    "name": "embervine",
+    "comment": "embervine small - slim jungle trunk, drooping branches, magma fruit tips",
+    "filenames": [
+      "embervine_small_1",
+      "embervine_small_2",
+      "embervine_small_3"
+    ],
+    "trunk": "minecraft:jungle_log",
+    "leaves": "minecraft:jungle_leaves",
+    "secondary_leaves": "minecraft:shroomlight",
+    "secondary_leaf_fraction": 0.1,
+    "profile": "jungle",
+    "height_min": 9,
+    "height_max": 12,
+    "seed": 4100,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "constant",
+    "trunk_shape_params": {},
+    "canopy": {
+      "mode": "density",
+      "leaf_density": 0.82,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": {
+          "exponent": 2.0
+        },
+        "length_fn": "linear",
+        "length_params": {
+          "base": 2,
+          "crown": 5
+        },
+        "azimuth": "random",
+        "elevation": -15,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "density",
+        "cluster_density": 0.8
+      }
+    },
+    "decorators": [
+      {
+        "target": "branch_tip",
+        "block": "minecraft:magma_block",
+        "chance": 0.28
+      },
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:vine",
+        "chance": 0.18
+      }
+    ]
+  },
+  {
+    "name": "embervine",
+    "comment": "embervine medium - wider trunk, heavier drooping, more shroomlight",
+    "filenames": [
+      "embervine_medium_1",
+      "embervine_medium_2",
+      "embervine_medium_3"
+    ],
+    "trunk": "minecraft:jungle_log",
+    "leaves": "minecraft:jungle_leaves",
+    "secondary_leaves": "minecraft:shroomlight",
+    "secondary_leaf_fraction": 0.14,
+    "profile": "jungle",
+    "height_min": 13,
+    "height_max": 17,
+    "seed": 4101,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "log",
+    "trunk_shape_params": {
+      "base": 2.0
+    },
+    "canopy": {
+      "mode": "density",
+      "leaf_density": 0.8,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": {
+          "exponent": 1.8
+        },
+        "length_fn": "linear",
+        "length_params": {
+          "base": 3,
+          "crown": 6
+        },
+        "azimuth": "random",
+        "elevation": -18,
+        "leaf_start_up": false,
+        "cluster_radius": 2,
+        "cluster_mode": "density",
+        "cluster_density": 0.78,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -10,
+          "yaw_delta": 50,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "trimmed",
+          "cluster_density": 0.8
+        }
+      }
+    },
+    "decorators": [
+      {
+        "target": "branch_tip",
+        "block": "minecraft:magma_block",
+        "chance": 0.32
+      },
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:vine",
+        "chance": 0.2
+      }
+    ]
+  },
+  {
+    "name": "embervine",
+    "comment": "embervine tall - thick trunk, dense shroomlight canopy, heavy magma clusters",
+    "filenames": [
+      "embervine_large_1",
+      "embervine_large_2",
+      "embervine_large_3",
+      "embervine_large_4"
+    ],
+    "trunk": "minecraft:jungle_log",
+    "leaves": "minecraft:jungle_leaves",
+    "secondary_leaves": "minecraft:shroomlight",
+    "secondary_leaf_fraction": 0.18,
+    "profile": "jungle",
+    "height_min": 18,
+    "height_max": 24,
+    "seed": 4102,
+    "count": 4,
+    "trunk_width": 2,
+    "trunk_shape": "log",
+    "trunk_shape_params": {
+      "base": 2.5
+    },
+    "canopy": {
+      "mode": "density",
+      "leaf_density": 0.78,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": {
+          "exponent": 1.6
+        },
+        "length_fn": "linear",
+        "length_params": {
+          "base": 3,
+          "crown": 7
+        },
+        "azimuth": "random",
+        "elevation": -20,
+        "leaf_start_up": false,
+        "cluster_radius": 3,
+        "cluster_mode": "density",
+        "cluster_density": 0.75,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": -12,
+          "yaw_delta": 55,
+          "length_scale": 0.5,
+          "cluster_radius": 2,
+          "cluster_mode": "trimmed",
+          "cluster_density": 0.78
+        }
+      }
+    },
+    "decorators": [
+      {
+        "target": "branch_tip",
+        "block": "minecraft:magma_block",
+        "chance": 0.35
+      },
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:vine",
+        "chance": 0.22
+      }
+    ]
+  }
+]

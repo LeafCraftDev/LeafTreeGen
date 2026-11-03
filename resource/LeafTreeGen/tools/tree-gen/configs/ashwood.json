@@ -1,0 +1,179 @@
+[
+  {
+    "name": "ashwood",
+    "comment": "ashwood small - slim basalt trunk, sparse dead canopy, soul torch tips",
+    "filenames": [
+      "ashwood_small_1",
+      "ashwood_small_2",
+      "ashwood_small_3"
+    ],
+    "trunk": "minecraft:basalt",
+    "leaves": "minecraft:dead_bush",
+    "profile": "oak",
+    "height_min": 6,
+    "height_max": 8,
+    "seed": 4200,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "log",
+    "trunk_shape_params": {
+      "base": 2.0
+    },
+    "canopy": {
+      "layers": [
+        {
+          "y_offset": 6,
+          "radius": 2.0
+        },
+        {
+          "y_offset": 8,
+          "radius": 1.0
+        }
+      ],
+      "mode": "density",
+      "leaf_density": 0.22
+    },
+    "decorators": [
+      {
+        "target": "branch_tip",
+        "block": "minecraft:soul_torch",
+        "chance": 0.12
+      },
+      {
+        "target": "trunk_base",
+        "block": "minecraft:basalt",
+        "chance": 0.35
+      }
+    ],
+    "roots": false
+  },
+  {
+    "name": "ashwood",
+    "comment": "ashwood medium - wider basalt trunk, branching dead crown, soul torch accents",
+    "filenames": [
+      "ashwood_medium_1",
+      "ashwood_medium_2",
+      "ashwood_medium_3"
+    ],
+    "trunk": "minecraft:basalt",
+    "leaves": "minecraft:dead_bush",
+    "profile": "oak",
+    "height_min": 9,
+    "height_max": 12,
+    "seed": 4201,
+    "count": 3,
+    "trunk_width": 1,
+    "trunk_shape": "log",
+    "trunk_shape_params": {
+      "base": 2.5
+    },
+    "canopy": {
+      "mode": "density",
+      "leaf_density": 0.2,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": {
+          "exponent": 2.5
+        },
+        "length_fn": "linear",
+        "length_params": {
+          "base": 2,
+          "crown": 4
+        },
+        "azimuth": "random",
+        "elevation": 10,
+        "leaf_start_up": false,
+        "cluster_radius": 1,
+        "cluster_mode": "density",
+        "cluster_density": 0.3
+      }
+    },
+    "decorators": [
+      {
+        "target": "branch_tip",
+        "block": "minecraft:soul_torch",
+        "chance": 0.15
+      },
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:glow_lichen",
+        "chance": 0.06
+      },
+      {
+        "target": "trunk_base",
+        "block": "minecraft:basalt",
+        "chance": 0.4
+      }
+    ],
+    "roots": false
+  },
+  {
+    "name": "ashwood",
+    "comment": "ashwood tall - thick basalt trunk, gaunt branching crown, ash scatter at base",
+    "filenames": [
+      "ashwood_large_1",
+      "ashwood_large_2",
+      "ashwood_large_3"
+    ],
+    "trunk": "minecraft:basalt",
+    "leaves": "minecraft:dead_bush",
+    "profile": "oak",
+    "height_min": 13,
+    "height_max": 17,
+    "seed": 4202,
+    "count": 3,
+    "trunk_width": 2,
+    "trunk_shape": "log",
+    "trunk_shape_params": {
+      "base": 3.0
+    },
+    "canopy": {
+      "mode": "density",
+      "leaf_density": 0.18,
+      "branches": {
+        "prob_fn": "top_heavy",
+        "prob_params": {
+          "exponent": 2.0
+        },
+        "length_fn": "linear",
+        "length_params": {
+          "base": 2,
+          "crown": 5
+        },
+        "azimuth": "random",
+        "elevation": 8,
+        "leaf_start_up": false,
+        "cluster_radius": 1,
+        "cluster_mode": "density",
+        "cluster_density": 0.25,
+        "sub_branches": {
+          "count": 2,
+          "pitch_delta": 5,
+          "yaw_delta": 60,
+          "length_scale": 0.5,
+          "cluster_radius": 1,
+          "cluster_mode": "density",
+          "cluster_density": 0.2
+        }
+      }
+    },
+    "decorators": [
+      {
+        "target": "branch_tip",
+        "block": "minecraft:soul_torch",
+        "chance": 0.18
+      },
+      {
+        "target": "trunk_surface",
+        "block": "minecraft:glow_lichen",
+        "chance": 0.07
+      },
+      {
+        "target": "trunk_base",
+        "block": "minecraft:basalt",
+        "chance": 0.45
+      }
+    ],
+    "roots": false
+  }
+]

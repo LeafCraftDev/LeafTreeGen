@@ -1,0 +1,23 @@
+plugins {
+    // Unobfuscated MC (26.1+) uses the net.fabricmc.fabric-loom plugin ID with no
+    // mappings step (version pinned centrally in settings.gradle pluginManagement).
+    id 'net.fabricmc.fabric-loom'
+}
+
+version = '1.1.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+dependencies {
+    minecraft 'com.mojang:minecraft:26.1.2'
+
+    implementation project(':resource:LeafTreeGen:treegen-common')
+    implementation(project(':fabric:fabric-common-unobf')) { transitive = false }
+    implementation 'net.fabricmc:fabric-loader:0.18.4'
+    implementation 'net.fabricmc.fabric-api:fabric-api:0.143.5+26.1'
+    compileOnly 'com.mojang:brigadier:1.3.10'
+}
