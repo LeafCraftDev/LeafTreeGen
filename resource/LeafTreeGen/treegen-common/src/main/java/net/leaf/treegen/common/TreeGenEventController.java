@@ -40,6 +40,7 @@ public final class TreeGenEventController implements AutoCloseable {
     private final List<AutoCloseable> subscriptions = new ArrayList<>();
     private final Map<WorldChunkKey, List<Map<TreeModel.BlockPos, String>>> pendingChunkSlices =
             new ConcurrentHashMap<>();
+    private final java.util.Set<WorldChunkKey> seenChunks = ConcurrentHashMap.newKeySet();
 
     public TreeGenEventController(Platform platform,
                                   Supplier<TreeGenConfig> configRef,
@@ -70,6 +71,9 @@ public final class TreeGenEventController implements AutoCloseable {
 
     @Override
     public void close() {
+        for (WorldChunkKey key : new ArrayList<>(pendingChunkSlices.keySet())) {
+            retryPendingSavedChunkPatch(key);
+        }
         for (AutoCloseable sub : subscriptions) {
             try {
                 sub.close();
@@ -231,6 +235,9 @@ public final class TreeGenEventController implements AutoCloseable {
         String worldName = ctx.worldName();
         int chunkX = ctx.chunkX();
         int chunkZ = ctx.chunkZ();
+        if (worldName != null) {
+            seenChunks.add(new WorldChunkKey(worldName, chunkX, chunkZ));
+        }
         flushPendingOverhangs(worldName, chunkX, chunkZ);
         if (farmStore != null) {
             farmStore.flushPendingChunk(worldName, chunkX, chunkZ);
@@ -245,91 +252,118 @@ public final class TreeGenEventController implements AutoCloseable {
         if (cfg == null || !cfg.useProcedural() || proceduralGenerator == null) {
             return;
         }
+        if (!platform.isChunkLoaded(worldName, chunkX, chunkZ)) {
+            return;
+        }
 
+        long worldSeed = ctx.worldSeed();
         for (TreeSpecies species : cfg.species().values()) {
-            if (!species.worldgen() || (!proceduralGenerator.canGenerate(species) && species.isFeatureTreesOnly())) continue;
+            if (!species.worldgen() || (!proceduralGenerator.canGenerate(species) && species.isFeatureTreesOnly())) {
+                continue;
+            }
+            if (!proceduralGenerator.canGenerate(species)) {
+                continue;
+            }
 
             int spacing = Math.max(1, species.spacing());
             int salt = species.effectiveSalt();
             int[] targetChunk = io.github.dailystruggle.rtp.common.predict.DistributionSampler
-                    .gridCellSample(chunkX, chunkZ, spacing, ctx.worldSeed(), salt);
+                    .gridCellSample(chunkX, chunkZ, spacing, worldSeed, salt);
             if (chunkX != targetChunk[0] || chunkZ != targetChunk[1]) {
                 continue;
             }
-            final TreeSpecies finalSpecies = species;
-            final boolean shouldReplaceVanilla = species.replaceVanilla();
-            final long worldSeed = ctx.worldSeed();
+            Random gridRandom = new Random(
+                    io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                            .variantSeed(species.id(), (((long) chunkX) << 32) ^ (chunkZ & 0xFFFFFFFFL) ^ worldSeed));
 
-            platform.scheduleDelayedTask(worldName, chunkX, chunkZ, () -> {
-                if (!platform.isChunkLoaded(worldName, chunkX, chunkZ)) {
-                    return;
+            int chosenX = Integer.MIN_VALUE;
+            int chosenY = Integer.MIN_VALUE;
+            int chosenZ = Integer.MIN_VALUE;
+            for (int attempt = 0; attempt < 4; attempt++) {
+                int candX = (chunkX << 4) + gridRandom.nextInt(16);
+                int candZ = (chunkZ << 4) + gridRandom.nextInt(16);
+                int candY = platform.findTreeGroundY(worldName, candX, candZ);
+                if (candY == Integer.MIN_VALUE) {
+                    continue;
                 }
-                Random gridRandom = new Random(
-                        io.github.dailystruggle.rtp.common.predict.DistributionSampler
-                                .variantSeed(finalSpecies.id(), (((long) chunkX) << 32) ^ (chunkZ & 0xFFFFFFFFL) ^ worldSeed));
-
-                int centerX = (chunkX << 4) + 8;
-                int centerZ = (chunkZ << 4) + 8;
-                int centerY = platform.findTreeGroundY(worldName, centerX, centerZ);
-                String centerBiome = platform.getBiomeKey(worldName, centerX, centerY == Integer.MIN_VALUE ? 64 : centerY, centerZ);
-                if (!finalSpecies.allowsWorldgenBiome(centerBiome)) {
-                    return;
+                if (!cfg.allowsWaterGrowth(species.id())
+                        && (isLiquidOrAquaticState(platform.getBlockState(worldName, candX, candY, candZ))
+                                || isLiquidOrAquaticState(platform.getBlockState(worldName, candX, candY + 1, candZ)))) {
+                    continue;
                 }
-
-                int x = (chunkX << 4) + gridRandom.nextInt(16);
-                int z = (chunkZ << 4) + gridRandom.nextInt(16);
-                int y = platform.findTreeGroundY(worldName, x, z);
-                if (y == Integer.MIN_VALUE) {
-                    return;
+                String exactBiome = platform.getBiomeKey(worldName, candX, candY, candZ);
+                if (species.allowsWorldgenBiome(exactBiome)) {
+                    chosenX = candX;
+                    chosenY = candY;
+                    chosenZ = candZ;
+                    break;
                 }
+            }
+            if (chosenY == Integer.MIN_VALUE) {
+                continue;
+            }
+            int x = chosenX;
+            int y = chosenY;
+            int z = chosenZ;
 
-                String exactBiome = platform.getBiomeKey(worldName, x, y, z);
-                if (!finalSpecies.allowsWorldgenBiome(exactBiome)) {
-                    return;
-                }
-
-                final int finalX = x;
-                final int finalY = y;
-                final int finalZ = z;
-                final Random finalRandom = new Random(gridRandom.nextLong());
-
-                if (shouldReplaceVanilla) {
-                    Map<Long, Map<TreeModel.BlockPos, String>> clearingChunks = new HashMap<>();
-                    int radius = 2;
-                    for (int dx = -radius; dx <= radius; dx++) {
-                        for (int dz = -radius; dz <= radius; dz++) {
-                            for (int dy = 1; dy <= 40; dy++) {
-                                int bx = finalX + dx;
-                                int by = finalY + dy;
-                                int bz = finalZ + dz;
-                                int bcx = bx >> 4;
-                                int bcz = bz >> 4;
-                                long key = TreeModel.chunkKey(bcx, bcz);
-                                clearingChunks.computeIfAbsent(key, k -> new LinkedHashMap<>())
-                                        .put(new TreeModel.BlockPos(bx, by, bz), "minecraft:void_air");
-                            }
+            Random treeRandom = new Random(gridRandom.nextLong());
+            if (species.replaceVanilla()) {
+                Map<Long, Map<TreeModel.BlockPos, String>> clearingChunks = new HashMap<>();
+                int radius = 2;
+                for (int dx = -radius; dx <= radius; dx++) {
+                    for (int dz = -radius; dz <= radius; dz++) {
+                        for (int dy = 1; dy <= 40; dy++) {
+                            int bx = x + dx;
+                            int by = y + dy;
+                            int bz = z + dz;
+                            int bcx = bx >> 4;
+                            int bcz = bz >> 4;
+                            long key = TreeModel.chunkKey(bcx, bcz);
+                            clearingChunks.computeIfAbsent(key, k -> new LinkedHashMap<>())
+                                    .put(new TreeModel.BlockPos(bx, by, bz), "minecraft:void_air");
                         }
                     }
-                    clearingChunks.forEach((key, blocks) -> {
-                        int bcx = TreeModel.chunkX(key);
-                        int bcz = TreeModel.chunkZ(key);
-                        placeOrDeferChunkBlocks(worldName, bcx, bcz, blocks);
-                    });
                 }
-                placeProceduralByChunk(worldName, finalX, finalY + 1, finalZ, finalSpecies, finalRandom);
-                if (farmStore != null) {
-                    int radius = SaplingDropResolver.estimateCanopyRadius(finalSpecies);
-                    int height = SaplingDropResolver.estimateHeight(finalSpecies);
-                    farmStore.recordTree(worldName, finalX, finalY + 1, finalZ, radius, height, finalSpecies.id());
-                }
-            }, PLACEMENT_DELAY_TICKS);
+                clearingChunks.forEach((key, blocks) -> {
+                    int bcx = TreeModel.chunkX(key);
+                    int bcz = TreeModel.chunkZ(key);
+                    placeOrDeferChunkBlocks(worldName, bcx, bcz, blocks);
+                });
+            }
+            placeProceduralByChunk(worldName, x, y + 1, z, species, treeRandom);
+            if (farmStore != null) {
+                int radius = SaplingDropResolver.estimateCanopyRadius(species);
+                int height = SaplingDropResolver.estimateHeight(species);
+                farmStore.recordTree(worldName, x, y + 1, z, radius, height, species.id());
+            }
         }
+    }
+
+    private static boolean isLiquidOrAquaticState(String canonicalState) {
+        if (canonicalState == null || canonicalState.isBlank()) {
+            return false;
+        }
+        int bracket = canonicalState.indexOf('[');
+        String base = (bracket >= 0 ? canonicalState.substring(0, bracket) : canonicalState)
+                .toLowerCase(Locale.ROOT);
+        if (!base.contains(":")) {
+            base = "minecraft:" + base;
+        }
+        return base.equals("minecraft:water")
+                || base.equals("minecraft:lava")
+                || base.equals("minecraft:bubble_column")
+                || base.equals("minecraft:kelp")
+                || base.equals("minecraft:kelp_plant")
+                || base.equals("minecraft:seagrass")
+                || base.equals("minecraft:tall_seagrass");
     }
 
     /**
      * Generates a procedural tree at {@code (ox, oy, oz)} and places each per-chunk slice
-     * immediately if its chunk is loaded, or defers unloaded neighbor overhang slices until their
-     * chunk fires {@link #onChunkLoad(ChunkLoadContext)} (S-005).
+     * immediately if its chunk is loaded, retroactively patches saved chunks on disk via
+     * {@link io.github.dailystruggle.anvil.RegionFileResolver#patchChunkBlocks}, or defers
+     * ungenerated neighbor overhang slices until their chunk fires
+     * {@link #onChunkLoad(ChunkLoadContext)} (S-005).
      */
     boolean placeProceduralByChunk(
             String worldName, int ox, int oy, int oz, TreeSpecies species, Random rng) {
@@ -358,17 +392,102 @@ public final class TreeGenEventController implements AutoCloseable {
             if (!replaceable.isEmpty()) {
                 platform.setBlocks(worldName, chunkX, chunkZ, replaceable);
             }
-        } else {
+        } else if (!patchSavedChunkIfPresent(worldName, chunkX, chunkZ, blocks)) {
             WorldChunkKey key = new WorldChunkKey(worldName, chunkX, chunkZ);
+            boolean[] firstForKey = {false};
             pendingChunkSlices.compute(key, (k, existing) -> {
                 List<Map<TreeModel.BlockPos, String>> list =
                         existing != null ? existing : new ArrayList<>();
+                if (list.isEmpty()) {
+                    firstForKey[0] = true;
+                }
                 if (list.size() < MAX_PENDING_SLICES_PER_CHUNK) {
                     list.add(new LinkedHashMap<>(blocks));
                 }
                 return list;
             });
+            if (firstForKey[0] && seenChunks.contains(key)) {
+                platform.scheduleDelayedTask(
+                        worldName, chunkX, chunkZ, () -> retryPendingSavedChunkPatch(key), 20L);
+            }
         }
+    }
+
+    private void retryPendingSavedChunkPatch(WorldChunkKey key) {
+        if (key == null) return;
+        if (platform.isChunkLoaded(key.worldName(), key.chunkX(), key.chunkZ())) {
+            flushPendingOverhangs(key.worldName(), key.chunkX(), key.chunkZ());
+            return;
+        }
+        List<Map<TreeModel.BlockPos, String>> slices = pendingChunkSlices.get(key);
+        if (slices == null || slices.isEmpty()) {
+            return;
+        }
+        Map<TreeModel.BlockPos, String> merged = new LinkedHashMap<>();
+        synchronized (slices) {
+            for (Map<TreeModel.BlockPos, String> slice : slices) {
+                if (slice != null) {
+                    merged.putAll(slice);
+                }
+            }
+        }
+        if (merged.isEmpty()) {
+            return;
+        }
+        if (patchSavedChunkIfPresent(key.worldName(), key.chunkX(), key.chunkZ(), merged)) {
+            pendingChunkSlices.remove(key, slices);
+        }
+    }
+
+    private boolean patchSavedChunkIfPresent(
+            String worldName, int chunkX, int chunkZ, Map<TreeModel.BlockPos, String> blocks) {
+        if (worldName == null || blocks == null || blocks.isEmpty()) {
+            return false;
+        }
+        java.nio.file.Path worldFolder = platform.getWorldFolder(worldName);
+        if (worldFolder == null) {
+            return false;
+        }
+        List<io.github.dailystruggle.anvil.RegionFileReader.BlockPatch> patches =
+                new ArrayList<>(blocks.size());
+        for (Map.Entry<TreeModel.BlockPos, String> e : blocks.entrySet()) {
+            TreeModel.BlockPos pos = e.getKey();
+            patches.add(new io.github.dailystruggle.anvil.RegionFileReader.BlockPatch(
+                    pos.x(), pos.y(), pos.z(), e.getValue()));
+        }
+        try {
+            return io.github.dailystruggle.anvil.RegionFileResolver.patchChunkBlocks(
+                    worldFolder, "", chunkX, chunkZ, patches, TreeGenEventController::isSavedStateReplaceable);
+        } catch (java.io.IOException ex) {
+            platform.logger().warning("Failed to patch saved chunk (" + chunkX + "," + chunkZ + ") in "
+                    + worldName + ": " + ex.getMessage());
+            return false;
+        }
+    }
+
+    private static boolean isSavedStateReplaceable(String canonicalState) {
+        if (canonicalState == null || canonicalState.isBlank()) {
+            return true;
+        }
+        int bracket = canonicalState.indexOf('[');
+        String base = (bracket >= 0 ? canonicalState.substring(0, bracket) : canonicalState)
+                .toLowerCase(Locale.ROOT);
+        if (!base.contains(":")) {
+            base = "minecraft:" + base;
+        }
+        return base.equals("minecraft:air")
+                || base.equals("minecraft:cave_air")
+                || base.equals("minecraft:void_air")
+                || base.equals("minecraft:short_grass")
+                || base.equals("minecraft:grass")
+                || base.equals("minecraft:tall_grass")
+                || base.equals("minecraft:fern")
+                || base.equals("minecraft:large_fern")
+                || base.equals("minecraft:dead_bush")
+                || base.equals("minecraft:vine")
+                || base.equals("minecraft:snow")
+                || base.endsWith("_leaves")
+                || base.endsWith("_sapling");
     }
 
     /**

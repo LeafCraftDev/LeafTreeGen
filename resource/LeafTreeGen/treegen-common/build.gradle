@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
 }
 
-version = '1.1.0'
+version = '1.0.0'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -11,13 +11,13 @@ java {
 
 dependencies {
     compileOnly 'com.google.code.gson:gson:2.11.0'
-    api project(':server-api')
-    api project(':yaml-api')
-    api project(':commands-api')
-    api project(':predict-api')
+    api "io.github.dailystruggle:server-api:${rootProject.version}"
+    api "io.github.dailystruggle:yaml-api:${rootProject.version}"
+    api "io.github.dailystruggle:commands-api:${rootProject.version}"
+    api "io.github.dailystruggle:predict-api:${rootProject.version}"
+    api "io.github.dailystruggle:anvil-api:${rootProject.version}"
 
     testImplementation 'com.google.code.gson:gson:2.11.0'
-    testImplementation project(':anvil-api')
 }
 
 test {
