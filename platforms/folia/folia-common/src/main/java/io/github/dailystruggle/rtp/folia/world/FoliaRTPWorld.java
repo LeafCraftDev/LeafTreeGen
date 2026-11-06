@@ -792,6 +792,11 @@ public final class FoliaRTPWorld extends RTPWorld<World> {
       Object deferredToken,
       Chunk residentChunk) {
     final long key = ((long) cx & 0xffffffffL | ((long) cz << 32));
+    if (!forceLoad && world != null && org.bukkit.Bukkit.getServer() != null
+        && org.bukkit.Bukkit.isOwnedByCurrentRegion(world, cx, cz)) {
+      world.removePluginChunkTicket(cx, cz, plugin);
+      return CompletableFuture.completedFuture(null);
+    }
     io.github.dailystruggle.rtp.api.scheduling.RTPScheduler scheduler =
         RTPRuntime.serverAccessor() == null ? null : RTPRuntime.serverAccessor().getScheduler();
     if (scheduler == null || !plugin.isEnabled()) {

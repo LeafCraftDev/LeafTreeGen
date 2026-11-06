@@ -9,7 +9,7 @@ plugins {
 }
 
 group = 'io.github.dailystruggle'
-version = '1.1.0'
+version = '1.0.0'
 
 base {
     archivesName = 'LeafTreeGen'
@@ -36,7 +36,8 @@ dependencies {
     // entry points as reachability roots while tree-shaking shaded SDK libraries.
     api project(':resource:LeafTreeGen:treegen-paper')
     implementation(project(':bukkit:bukkit-common')) { transitive = false }
-    implementation(project(':effects-api')) { transitive = false }
+    implementation("io.github.dailystruggle:effects-api:${rootProject.version}") { transitive = false }
+    implementation("io.github.dailystruggle:anvil-api:${rootProject.version}") { transitive = false }
 
     if (findProject(':resource:LeafTreeGen:treegen-fabric') != null) {
         api(project(':resource:LeafTreeGen:treegen-fabric')) { transitive = false }

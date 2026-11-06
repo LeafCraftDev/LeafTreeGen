@@ -306,4 +306,22 @@ class FoliaRTPWorldChunkTicketTest {
     assertTrue(apply.isDone());
     assertFalse(apply.isCompletedExceptionally());
   }
+
+  @Test
+  @DisplayName("S-002: ticket release on owning region thread removes ticket inline without queueing regional task")
+  void releaseOnOwningRegionThreadRemovesTicketInline() {
+    Chunk resident = Mockito.mock(Chunk.class);
+    when(resident.isLoaded()).thenReturn(true);
+    rtpWorld.cacheChunk(3, 4, resident);
+    rtpWorld.setForceLoaded(3, 4, true);
+    regionScheduler.executeAll();
+
+    when(org.bukkit.Bukkit.getServer().isOwnedByCurrentRegion(bukkitWorld, 3, 4)).thenReturn(true);
+
+    CompletableFuture<Void> release = rtpWorld.setForceLoaded(3, 4, false);
+
+    assertTrue(release.isDone(), "inline release on owning region must complete immediately");
+    assertEquals(0, regionScheduler.pendingCount(), "inline release must not enqueue a regional task");
+    verify(bukkitWorld).removePluginChunkTicket(3, 4, plugin);
+  }
 }

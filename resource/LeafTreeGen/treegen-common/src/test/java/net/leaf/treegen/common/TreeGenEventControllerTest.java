@@ -526,6 +526,107 @@ public class TreeGenEventControllerTest {
                     "Deferred overhang flush must re-check isReplaceable and skip non-replaceable blocks at " + chestPos);
         }
     }
+    @Test
+    void testChunkLoadCompletesHaloPiecesOnFirstLoadWhenChunksUnloadImmediately() throws Exception {
+        // Save an already-generated chunk (0, 0) to disk under the 26.1+ unified overworld path
+        // (world/dimensions/minecraft/overworld/region/r.0.0.lca) with a chest at (15, 68, 8) and
+        // air elsewhere, then unload chunk (0, 0) before chunk (1, 0) generates.
+        Path regionDir = java.nio.file.Files.createDirectories(
+                platform.getWorldFolder("world")
+                        .resolve("dimensions")
+                        .resolve("minecraft")
+                        .resolve("overworld")
+                        .resolve("region"));
+        LinkedHashMap<String, Object> root = new LinkedHashMap<>();
+        root.put("DataVersion", 4671);
+        root.put("xPos", 0);
+        root.put("zPos", 0);
+        root.put("Status", "minecraft:full");
+        LinkedHashMap<String, Object> sec4 = new LinkedHashMap<>();
+        sec4.put("Y", (byte) 4);
+        LinkedHashMap<String, Object> bs = new LinkedHashMap<>();
+        LinkedHashMap<String, Object> airEntry = new LinkedHashMap<>();
+        airEntry.put("Name", "minecraft:air");
+        LinkedHashMap<String, Object> chestEntry = new LinkedHashMap<>();
+        chestEntry.put("Name", "minecraft:chest");
+        bs.put("palette", new io.github.dailystruggle.anvil.Nbt.NbtList(
+                io.github.dailystruggle.anvil.Nbt.TAG_COMPOUND, List.of(airEntry, chestEntry)));
+        int entryIdx = io.github.dailystruggle.anvil.PackedPaletteDecoder.entryIndex(15, 4, 8); // (15, 68, 8) = chest
+        long[] packed = new long[256];
+        packed[entryIdx / 16] = 1L << ((entryIdx % 16) * 4);
+        bs.put("data", packed);
+        sec4.put("block_states", bs);
+        root.put("sections", new io.github.dailystruggle.anvil.Nbt.NbtList(
+                io.github.dailystruggle.anvil.Nbt.TAG_COMPOUND, List.of(sec4)));
+        try (io.github.dailystruggle.anvil.LcaRegionFileStorage storage =
+                new io.github.dailystruggle.anvil.LcaRegionFileStorage(regionDir)) {
+            storage.writeChunkNbtBytes(0, 0, io.github.dailystruggle.anvil.Nbt.writeNamedRoot("", root));
+        }
+        io.github.dailystruggle.anvil.RegionFormatDetector.INSTANCE.invalidateCache();
+        io.github.dailystruggle.anvil.RegionFileResolver.invalidateMemo();
+
+        // Only chunk (1, 0) is loaded in memory; chunk (0, 0) is already saved & unloaded on disk,
+        // and chunk (2, 0) has not been generated yet.
+        platform.loadedChunks = new java.util.HashSet<>(Set.of(TreeModel.chunkKey(1, 0)));
+
+        // Place oakSpecies at (16, 64, 8) on the west border of chunk (1, 0) so its canopy
+        // overhangs west into saved chunk (0, 0).
+        controller.placeProceduralByChunk("world", 16, 64, 8, oakSpecies, new java.util.Random(42L));
+
+        Assertions.assertFalse(platform.placedBlocks.isEmpty(),
+                "Live origin chunk (1, 0) must receive its tree slice immediately");
+        Assertions.assertEquals(0, controller.pendingOverhangChunkCount(),
+                "Overhang into already-saved chunk (0, 0) must be retroactively patched on disk rather than stranded in pendingChunkSlices");
+
+        // Verify saved chunk (0, 0) on disk received the overhanging leaves via storage-agnostic anvil-api RMW.
+        io.github.dailystruggle.anvil.RegionFileResolver.ResolvedRegion resolved =
+                io.github.dailystruggle.anvil.RegionFileResolver.resolveExisting(
+                        platform.getWorldFolder("world"), "", 0, 0);
+        Assertions.assertNotNull(resolved);
+        io.github.dailystruggle.anvil.AnvilChunkView view =
+                io.github.dailystruggle.anvil.LcaRegionReader.readChunkView(
+                        java.nio.file.Files.readAllBytes(resolved.path()), 0, 0);
+        Assertions.assertNotNull(view);
+        Assertions.assertEquals("minecraft:chest", view.blockIdAt(15, 68, 8),
+                "Non-replaceable chest in saved chunk (0, 0) must be preserved during retroactive RMW");
+        boolean foundPatchedLeafInSavedChunk = false;
+        for (int lx = 13; lx <= 15; lx++) {
+            for (int y = 64; y < 75; y++) {
+                for (int lz = 6; lz <= 10; lz++) {
+                    String blockId = view.blockIdAt(lx, y, lz);
+                    if ("minecraft:oak_leaves".equals(blockId) || "minecraft:oak_log".equals(blockId)) {
+                        foundPatchedLeafInSavedChunk = true;
+                    }
+                }
+            }
+        }
+        Assertions.assertTrue(foundPatchedLeafInSavedChunk,
+                "Saved chunk (0, 0) on disk must contain retroactively patched overhanging canopy blocks");
+    }
+
+    @Test
+    void testOnChunkLoadHandlesBiomeBordersAndSkipsUnderwaterPondFloor() {
+        // 1. Biome border chunk: (8, 8) is minecraft:desert (disallowed by oakSpecies),
+        // while every other column is minecraft:plains (allowed).
+        platform.biomeOverrides.put(new TreeModel.BlockPos(8, 63, 8), "minecraft:desert");
+        platform.hook.fireChunkLoad(new ChunkLoadContext("world", 0, 0, true, 42L));
+        Assertions.assertFalse(platform.placedBlocks.isEmpty(),
+                "Single-point exactBiome check at (x, y, z) must place tree even when chunk center (8, 8) is a different biome");
+
+        // 2. Underwater pond/river floor: surface above ground (y = 64) is water.
+        platform.placedBlocks.clear();
+        for (int x = 0; x < 16; x++) {
+            for (int z = 0; z < 16; z++) {
+                platform.placedBlocks.put(new TreeModel.BlockPos(x, 64, z), "minecraft:water");
+            }
+        }
+        platform.hook.fireChunkLoad(new ChunkLoadContext("world", 0, 0, true, 42L));
+        long logsPlacedUnderwater = platform.placedBlocks.values().stream()
+                .filter(v -> v.contains("oak_log"))
+                .count();
+        Assertions.assertEquals(0L, logsPlacedUnderwater,
+                "Species without allow-water-growth must not be placed on submerged pond/river floors");
+    }
 
     private static final class StubTreeGenPlatform implements Platform {
         private final Path root;
@@ -534,6 +635,7 @@ public class TreeGenEventControllerTest {
         private final List<TaggedItemSpec> droppedItems = new ArrayList<>();
         private final List<TaggedItemSpec> givenItems = new ArrayList<>();
         private final Map<TreeModel.BlockPos, String> placedBlocks = new HashMap<>();
+        private final Map<TreeModel.BlockPos, String> biomeOverrides = new HashMap<>();
         private final Map<String, String> chunkData = new HashMap<>();
         private final Map<UUID, CallerLocation> callerLocations = new HashMap<>();
         private Set<Long> loadedChunks = null;
@@ -561,10 +663,10 @@ public class TreeGenEventControllerTest {
                 task.run();
             }
         }
-        @Override public String getBiomeKey(String worldName, int x, int y, int z) { return "minecraft:plains"; }
+        @Override public String getBiomeKey(String worldName, int x, int y, int z) {
+            return biomeOverrides.getOrDefault(new TreeModel.BlockPos(x, y, z), "minecraft:plains");
+        }
         @Override public boolean placeStructure(String worldName, int x, int y, int z, String structureKey) { return false; }
-
-        @Override
         public boolean giveItem(UUID fallbackPlayerId, String playerName, TaggedItemSpec item) {
             if ("Alice".equals(playerName) && item != null) {
                 givenItems.add(item);
@@ -590,6 +692,9 @@ public class TreeGenEventControllerTest {
 
         @Override
         public int getHighestBlockY(String worldName, int x, int z) {
+            if (!isChunkLoaded(worldName, x >> 4, z >> 4)) {
+                return Integer.MIN_VALUE;
+            }
             return 63;
         }
 

@@ -158,12 +158,11 @@ Each species definition (`species/*.json` and `config.yml`) feeds a dual-track w
 
 ## Testing and quality gates
 
-Every build runs `83` automated JUnit 5, `anvil-api` NBT, and stateful fuzz tests across `9` verification suites before release:
-
+Every build runs `89` automated JUnit 5, `anvil-api` NBT, and stateful fuzz tests across `10` verification suites before release:
 - [**Worldgen datapack, `leaf:*` biome & `anvil-api` `.nbt` verification**](../biome-trees.md): `LeafWorldgenDatapackTest` and `StructureNbtWriterTest` verify `pack.mcmeta`, biome tag referential integrity, rainbow/maple foliage color parity, and gzipped `.nbt` palette/block bounds via `io.github.dailystruggle.anvil.Nbt`.
 - [**1,848-model rotation, leaf-decay & extreme-parameter fuzz suite**](../adr/treegen-ADR-002-tree-configuration-and-outcomes.md): `TreeGenFuzzTest` and `TreeGenTest` build and rotate all `154` procedural definitions across `3` seeds and `4` rotations (`1,848` models) plus `100` extreme random parameter sets, verifying valid block-state properties, orthogonal wood-to-leaf connectivity (`distance=1..7`), and `100%` chunk-slice conservation.
 - [**Staged growth, cut-tree cancellation & 40-episode lifecycle fuzzing**](../adr/treegen-ADR-001-tree-growth-mechanic.md): `GrowthManagerTest`, `GrowthPlannerTest`, and `TreeGenFuzzTest` verify additive Y-band stage derivation, pooled pre-flight obstruction refusal, mid-growth player-build protection, cut-tree cancellation, and corrupt chunk-record purging.
-- [**Deferred chunk overhang, sapling-drop & command fuzzing**](../adr/treegen-ADR-003-java-plugin-architecture.md): `TreeGenEventControllerTest`, `SaplingDropResolverTest`, and `TreeFarmStoreTest` verify synchronous sapling consumption with failure refunds, unloaded neighbor overhang deferral until `onChunkLoad`, group-species leaf drops, and `/leaftree` command fuzzing.
+- [**Deferred chunk overhang, sapling-drop & command fuzzing**](../adr/treegen-ADR-003-java-plugin-architecture.md): `LeafTreeGenCommandTest`, `TreeGenEventControllerTest`, `SaplingDropResolverTest`, and `TreeFarmStoreTest` verify synchronous sapling consumption with failure refunds, unloaded neighbor overhang deferral until `onChunkLoad`, group-species leaf drops, and `/leaftree` `commands-api` dispatch, tab completion, and clickable chip execution.
 
 ---
 
