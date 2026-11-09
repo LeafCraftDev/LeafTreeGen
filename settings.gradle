@@ -356,3 +356,23 @@ if (!excludeJdk25) {
 if (!excludeNeoforge && !excludeJdk25) {
     include 'resource:LeafTreeGen:treegen-neoforge'
 }
+
+
+
+
+
+
+
+
+
+
+include 'resource:LeafShard:leafshard-common'
+include 'resource:LeafShard:leafshard-paper'
+include 'resource:LeafShard:leafshard-velocity'
+include 'resource:LeafShard:leafshard-plugin'
+if (!excludeJdk25) {
+    include 'resource:LeafShard:leafshard-fabric'
+}
+if (!excludeNeoforge && !excludeJdk25) {
+    include 'resource:LeafShard:leafshard-neoforge'
+}

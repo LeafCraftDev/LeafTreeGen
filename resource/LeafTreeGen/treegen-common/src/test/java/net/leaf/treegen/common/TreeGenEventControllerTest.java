@@ -628,6 +628,228 @@ public class TreeGenEventControllerTest {
                 "Species without allow-water-growth must not be placed on submerged pond/river floors");
     }
 
+    @Test
+    void testOnChunkLoadCompletesOverhangFromPreexistingAdjacentChunksAcrossRegionBoundary() throws Exception {
+        // Configure a wide-canopy species with spacing=2 so chunk (31, 0) in r.0.0 is selected
+        // while chunk (32, 0) in r.1.0 is not selected as a tree origin itself.
+        TreeSpecies.ProceduralParams wideParams = new TreeSpecies.ProceduralParams(
+                "minecraft:spruce_log",
+                "minecraft:spruce_leaves",
+                10,
+                10,
+                "SPRUCE",
+                1.0,
+                "CONSTANT",
+                Map.of(),
+                false,
+                0.0,
+                0.0,
+                "CONSTANT",
+                Map.of(),
+                "LINEAR",
+                Map.of(),
+                null,
+                0.5,
+                1.0,
+                new TreeSpecies.CanopyParams(
+                        "DENSITY",
+                        1.0,
+                        List.of(new TreeSpecies.CanopyParams.Layer(6, 15.0)),
+                        null,
+                        null,
+                        0.0,
+                        true,
+                        1.0,
+                        null,
+                        null,
+                        1.0),
+                false,
+                0,
+                0,
+                List.of());
+        TreeSpecies borderSpruce = new TreeSpecies(
+                "border-spruce",
+                "Border Spruce",
+                "minecraft",
+                "border-spruce",
+                Set.of("minecraft:snowy_taiga"),
+                "SPRUCE_SAPLING",
+                true,
+                true,
+                2,
+                0,
+                321,
+                "linear",
+                "surface_structures",
+                List.of(),
+                wideParams,
+                null,
+                null,
+                1);
+        Map<String, TreeSpecies> speciesMap = new LinkedHashMap<>();
+        speciesMap.put(borderSpruce.id(), borderSpruce);
+        config = new TreeGenConfig(
+                speciesMap, "test-pack", "desc", TreeGenConfig.GenerationMode.PROCEDURAL, 4.0, 200);
+        proceduralGenerator.setConfigSpecies(speciesMap);
+
+        long chosenSeed = -1L;
+        for (long s = 1L; s < 10_000L; s++) {
+            int[] t31 = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                    .gridCellSample(31, 0, 2, s, borderSpruce.effectiveSalt());
+            int[] t32 = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                    .gridCellSample(32, 0, 2, s, borderSpruce.effectiveSalt());
+            java.util.Random gr = new java.util.Random(
+                    io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                            .variantSeed(borderSpruce.id(), (((long) 31) << 32) ^ (0 & 0xFFFFFFFFL) ^ s));
+            int localX = gr.nextInt(16);
+            if (t31[0] == 31 && t31[1] == 0 && (t32[0] != 32 || t32[1] != 0) && localX >= 14) {
+                chosenSeed = s;
+                break;
+            }
+        }
+        Assertions.assertTrue(chosenSeed > 0L, "Must find a deterministic seed targeting (31, 0) near east border but not (32, 0)");
+
+        // Write preexisting chunk (31, 0) into r.0.0.lca on disk with grass_block ground at y=63
+        // and biome minecraft:snowy_taiga, while chunk (32, 0) in r.1.0 is not yet generated.
+        java.nio.file.Path regionDir = platform.getWorldFolder("world").resolve("region");
+        java.nio.file.Files.createDirectories(regionDir);
+        LinkedHashMap<String, Object> root = new LinkedHashMap<>();
+        root.put("DataVersion", 4671);
+        root.put("xPos", 31);
+        root.put("zPos", 0);
+        root.put("Status", "minecraft:full");
+        LinkedHashMap<String, Object> sec3 = new LinkedHashMap<>();
+        sec3.put("Y", (byte) 3); // worldY 48..63
+        LinkedHashMap<String, Object> bs3 = new LinkedHashMap<>();
+        LinkedHashMap<String, Object> grassEntry = new LinkedHashMap<>();
+        grassEntry.put("Name", "minecraft:grass_block");
+        bs3.put("palette", new io.github.dailystruggle.anvil.Nbt.NbtList(
+                io.github.dailystruggle.anvil.Nbt.TAG_COMPOUND, List.of(grassEntry)));
+        sec3.put("block_states", bs3);
+        LinkedHashMap<String, Object> biomes3 = new LinkedHashMap<>();
+        biomes3.put("palette", new io.github.dailystruggle.anvil.Nbt.NbtList(
+                io.github.dailystruggle.anvil.Nbt.TAG_STRING, List.of("minecraft:snowy_taiga")));
+        sec3.put("biomes", biomes3);
+        root.put("sections", new io.github.dailystruggle.anvil.Nbt.NbtList(
+                io.github.dailystruggle.anvil.Nbt.TAG_COMPOUND, List.of(sec3)));
+        try (io.github.dailystruggle.anvil.LcaRegionFileStorage storage =
+                new io.github.dailystruggle.anvil.LcaRegionFileStorage(regionDir)) {
+            storage.writeChunkNbtBytes(31, 0, io.github.dailystruggle.anvil.Nbt.writeNamedRoot("", root));
+        }
+        io.github.dailystruggle.anvil.RegionFormatDetector.INSTANCE.invalidateCache();
+        // Only chunk (32, 0) in region r.1.0 is loaded; preexisting chunk (31, 0) in r.0.0 is
+        // unloaded on disk and pendingChunkSlices is empty (e.g. across a server restart).
+        platform.loadedChunks = new java.util.HashSet<>(Set.of(TreeModel.chunkKey(32, 0)));
+        platform.hook.fireChunkLoad(new ChunkLoadContext("world", 32, 0, true, chosenSeed));
+
+        boolean foundOverhangInChunk32 = platform.placedBlocks.entrySet().stream()
+                .anyMatch(e -> (e.getKey().x() >> 4) == 32
+                        && (e.getKey().z() >> 4) == 0
+                        && e.getValue().contains("spruce_leaves"));
+        Assertions.assertTrue(foundOverhangInChunk32,
+                "Loading chunk (32, 0) in r.1.0 must calculate and complete the overhanging tree from preexisting chunk (31, 0) in r.0.0 using its saved land data");
+
+        // Also verify when a preexisting neighbor chunk (31, 0) is already loaded in memory
+        // (newChunk=false) and another adjacent chunk (32, 0) loads from disk (newChunk=false),
+        // while loading (32, 0) BEFORE (31, 0) is loaded in memory does NOT perform synchronous
+        // main-thread disk reads for unloaded neighbors on pregenerated chunks (S-005).
+        for (int lx = 0; lx < 16; lx++) {
+            for (int lz = 0; lz < 16; lz++) {
+                platform.biomeOverrides.put(
+                        new TreeModel.BlockPos((31 << 4) + lx, 63, lz), "minecraft:snowy_taiga");
+            }
+        }
+        TreeSpecies groupWrapper = new TreeSpecies(
+                "snowy_taiga_group",
+                "Snowy Taiga Group",
+                "minecraft",
+                "snowy_taiga_group",
+                Set.of("minecraft:snowy_taiga"),
+                "SPRUCE_SAPLING",
+                true,
+                true,
+                2,
+                0,
+                321,
+                "linear",
+                "surface_structures",
+                List.of(),
+                null,
+                List.of(new TreeSpecies.WeightedSpecies(borderSpruce.id(), 100)),
+                null,
+                1);
+        Map<String, TreeSpecies> groupMap = new LinkedHashMap<>();
+        groupMap.put(groupWrapper.id(), groupWrapper);
+        groupMap.put(borderSpruce.id(), borderSpruce);
+        proceduralGenerator.setConfigSpecies(groupMap);
+        TreeGenConfig groupConfig = new TreeGenConfig(
+                Map.of(groupWrapper.id(), groupWrapper),
+                "test-pack",
+                "desc",
+                TreeGenConfig.GenerationMode.PROCEDURAL,
+                4.0,
+                200);
+        long groupSeed = -1L;
+        for (long s = 1L; s < 10_000L; s++) {
+            int[] t31 = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                    .gridCellSample(31, 0, 2, s, groupWrapper.effectiveSalt());
+            int[] t32 = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                    .gridCellSample(32, 0, 2, s, groupWrapper.effectiveSalt());
+            java.util.Random gr = new java.util.Random(
+                    io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                            .variantSeed(groupWrapper.id(), (((long) 31) << 32) ^ (0 & 0xFFFFFFFFL) ^ s));
+            int localX = gr.nextInt(16);
+            if (t31[0] == 31 && t31[1] == 0 && (t32[0] != 32 || t32[1] != 0) && localX >= 4 && localX <= 5) {
+                groupSeed = s;
+                break;
+            }
+        }
+        Assertions.assertTrue(groupSeed > 0L, "Must find deterministic seed for group species at localX=4..5");
+
+        try (TreeGenEventController freshController = new TreeGenEventController(
+                platform, () -> groupConfig, () -> registry, proceduralGenerator, growthManager, farmStore)) {
+            freshController.register();
+            platform.placedBlocks.clear();
+            platform.loadedChunks = new java.util.HashSet<>(Set.of(TreeModel.chunkKey(32, 0)));
+            platform.hook.fireChunkLoad(new ChunkLoadContext("world", 32, 0, false, groupSeed));
+            boolean placedWhileNeighborUnloaded = platform.placedBlocks.entrySet().stream()
+                    .anyMatch(e -> (e.getKey().x() >> 4) == 32
+                            && (e.getKey().z() >> 4) == 0
+                            && e.getValue().contains("spruce_leaves"));
+            Assertions.assertFalse(
+                    placedWhileNeighborUnloaded,
+                    "Pregenerated chunk (newChunk=false) must not synchronously read unloaded neighbor chunk (31, 0) from disk on the main thread (S-005)");
+
+            // Load trunk chunk (31, 0) AFTER target chunk (32, 0) is already loaded, without re-firing (32, 0):
+            // bidirectional edge completion and group child reach must place the overhang into (32, 0).
+            platform.loadedChunks = new java.util.HashSet<>(
+                    Set.of(TreeModel.chunkKey(31, 0), TreeModel.chunkKey(32, 0)));
+            platform.hook.fireChunkLoad(new ChunkLoadContext("world", 31, 0, false, groupSeed));
+            boolean completedOnNeighborLoad = platform.placedBlocks.entrySet().stream()
+                    .anyMatch(e -> (e.getKey().x() >> 4) == 32
+                            && (e.getKey().z() >> 4) == 0
+                            && e.getValue().contains("spruce_leaves"));
+            Assertions.assertTrue(completedOnNeighborLoad,
+                    "Loading preexisting trunk chunk (31, 0) after target chunk (32, 0) is already loaded must bidirectionally complete group species overhang into (32, 0)");
+        }
+        proceduralGenerator.setConfigSpecies(speciesMap);
+        try (TreeGenEventController pregenController = new TreeGenEventController(
+                platform, () -> config, () -> registry, proceduralGenerator, growthManager, farmStore)) {
+            pregenController.register();
+            // Simulate Chunky pregen where (32, 0) generates, unloads immediately, and (32, 1) generates next:
+            // (32, 0) was already spawned in this session so it must not be re-read from disk, and any .lca read
+            // for preexisting (31, 0) must use LcaRegionReader.readChunkViewFromFile rather than AnvilRegionByteCache.
+            platform.loadedChunks = new java.util.HashSet<>(Set.of(TreeModel.chunkKey(32, 0)));
+            platform.hook.fireChunkLoad(new ChunkLoadContext("world", 32, 0, true, chosenSeed));
+            platform.loadedChunks = new java.util.HashSet<>(Set.of(TreeModel.chunkKey(32, 1)));
+            platform.hook.fireChunkLoad(new ChunkLoadContext("world", 32, 1, true, chosenSeed));
+            Assertions.assertEquals(
+                    0L,
+                    io.github.dailystruggle.anvil.AnvilRegionByteCache.stats().total(),
+                    "Saved .lca chunk reads must use LcaRegionReader's cached dictionary and single-chunk reader rather than whole-file AnvilRegionByteCache");
+        }
+    }
+
     private static final class StubTreeGenPlatform implements Platform {
         private final Path root;
         private final DispatchingWorldEventHook hook = new DispatchingWorldEventHook();

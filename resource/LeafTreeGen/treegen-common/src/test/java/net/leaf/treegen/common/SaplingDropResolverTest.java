@@ -113,5 +113,39 @@ public class SaplingDropResolverTest {
                 all, "minecraft:meadow", "minecraft:flowering_azalea_leaves");
         Assertions.assertNotNull(resolvedAzalea,
                 "Group species must resolve secondary leaves of referenced child species");
+
+        TreeSpecies.BranchParams.SubBranchParams sub = new TreeSpecies.BranchParams.SubBranchParams(
+                3, -20.0, 60.0, 0.5, 2, "trimmed", 1.0);
+        TreeSpecies.BranchParams branches = new TreeSpecies.BranchParams(
+                0, 0.3, 1.0, "TOP_HEAVY", new HashMap<>(),
+                4.0, 12.0, -10.0, 20.0, 3, "trimmed", 1.0,
+                "LINEAR", new HashMap<>(), sub, true);
+        TreeSpecies.CanopyParams megaCanopy = new TreeSpecies.CanopyParams(
+                "DENSITY", 1.0, List.of(), branches, null, 0.0, false, 0.4, null, null, 0.0);
+        TreeSpecies.ProceduralParams megaParams = new TreeSpecies.ProceduralParams(
+                "minecraft:dark_oak_log", "minecraft:dark_oak_leaves", 55, 75, "DARK_OAK",
+                4.0, "PARABOLIC", new HashMap<>(), true,
+                120.0, 28.0, "SIGMOID", new HashMap<>(),
+                "LINEAR", new HashMap<>(), null, 0.5, 1.0,
+                megaCanopy, false, 7, 7, List.of());
+        TreeSpecies megaChild = new TreeSpecies(
+                "dark-forest-megas", "Dark Forest Megas", "minecraft", "dark-forest-megas",
+                Set.of(), "DARK_OAK_SAPLING", true, true, 2, 1, -1, "linear", "surface_structures",
+                List.of(), megaParams, null, null, 1);
+        TreeSpecies darkCanopyGroup = new TreeSpecies(
+                "dark_forest_canopy", "Dark Forest Canopy", "minecraft", "dark_forest_canopy",
+                Set.of("minecraft:dark_forest"), "DARK_OAK_SAPLING",
+                true, true, 2, 1, -1, "linear", "surface_structures",
+                List.of(), null,
+                List.of(new TreeSpecies.WeightedSpecies("dark_forest_megas", 100)),
+                null, 1);
+        int groupRadius = SaplingDropResolver.estimateCanopyRadius(
+                darkCanopyGroup, List.of(darkCanopyGroup, megaChild));
+        Assertions.assertTrue(groupRadius >= 50,
+                "Group species referencing leaning/branching mega child must include lean + branch + sub-branch reach, got " + groupRadius);
+        int groupHeight = SaplingDropResolver.estimateHeight(
+                darkCanopyGroup, List.of(darkCanopyGroup, megaChild));
+        Assertions.assertTrue(groupHeight >= 120,
+                "Group species height must traverse referenced child maxHeight + radius, got " + groupHeight);
     }
 }

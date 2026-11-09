@@ -64,6 +64,12 @@ public final class SaplingDropResolver {
         }
     }
 
+    private static boolean matchesSpeciesId(String targetId, String candidateId) {
+        if (targetId == null || candidateId == null) return false;
+        if (targetId.equalsIgnoreCase(candidateId)) return true;
+        return targetId.replace('-', '_').equalsIgnoreCase(candidateId.replace('-', '_'));
+    }
+
     private static Set<String> leafBlocksOfWithGroups(TreeSpecies s, Collection<TreeSpecies> allSpecies) {
         Set<String> out = new LinkedHashSet<>(leafBlocksOf(s));
         if (s != null && s.trees() != null && allSpecies != null) {
@@ -71,7 +77,7 @@ public final class SaplingDropResolver {
                 if (ws == null || ws.id() == null) continue;
                 String targetId = ws.id().contains(":") ? ws.id().substring(0, ws.id().indexOf(':')) : ws.id();
                 for (TreeSpecies candidate : allSpecies) {
-                    if (candidate != null && targetId.equals(candidate.id()) && candidate != s) {
+                    if (candidate != null && matchesSpeciesId(targetId, candidate.id()) && candidate != s) {
                         out.addAll(leafBlocksOf(candidate));
                     }
                 }
@@ -90,6 +96,14 @@ public final class SaplingDropResolver {
      * tracked farm region around a planted/placed tree. Always at least 4.
      */
     public static int estimateCanopyRadius(TreeSpecies species) {
+        return estimateCanopyRadius(species, null);
+    }
+
+    /**
+     * Rough horizontal radius (in blocks) of a species' canopy, traversing referenced
+     * child species when {@code species} is a group wrapper and {@code allSpecies} is supplied.
+     */
+    public static int estimateCanopyRadius(TreeSpecies species, Collection<TreeSpecies> allSpecies) {
         int r = 4;
         if (species == null) return r;
         if (species.procedural() != null) {
@@ -100,23 +114,79 @@ public final class SaplingDropResolver {
                 r = Math.max(r, estimateRadiusForParams(p));
             }
         }
+        if (species.trees() != null && allSpecies != null) {
+            r = Math.max(r, estimateGroupCanopyRadius(species, allSpecies));
+        }
+        return r;
+    }
+
+    private static int estimateGroupCanopyRadius(TreeSpecies species, Collection<TreeSpecies> allSpecies) {
+        int r = 4;
+        for (TreeSpecies.WeightedSpecies ws : species.trees()) {
+            if (ws == null || ws.id() == null) continue;
+            String[] parts = ws.id().split(":", 2);
+            for (TreeSpecies candidate : allSpecies) {
+                if (candidate == null || candidate == species || !matchesSpeciesId(parts[0], candidate.id())) {
+                    continue;
+                }
+                TreeSpecies.ProceduralParams named = (parts.length > 1 && candidate.treeDefinitions() != null)
+                        ? candidate.treeDefinitions().get(parts[1])
+                        : null;
+                r = Math.max(r, named != null ? estimateRadiusForParams(named) : estimateCanopyRadius(candidate, null));
+            }
+        }
         return r;
     }
 
     private static int estimateRadiusForParams(TreeSpecies.ProceduralParams p) {
         int r = 4;
-        if (p != null && p.canopy() != null) {
-            TreeSpecies.CanopyParams c = p.canopy();
-            if (c.layers() != null) {
-                for (TreeSpecies.CanopyParams.Layer l : c.layers()) {
-                    r = Math.max(r, (int) Math.ceil(l.radius()) + 1);
-                }
+        if (p == null) return r;
+        int maxH = Math.max(1, p.maxHeight());
+        double leanAngleDeg = Math.min(45.0, Math.max(0.0, p.leanAngle()));
+        int leanOffset = leanAngleDeg > 0.0
+                ? (int) Math.ceil(maxH * Math.tan(Math.toRadians(leanAngleDeg)))
+                : 0;
+        int trunkHalfWidth = (int) Math.ceil(Math.max(1.0, p.trunkWidth()) / 2.0);
+        int canopyReach = p.canopy() != null ? estimateCanopyReach(p, maxH, p.canopy()) : 0;
+        return Math.max(r, trunkHalfWidth + leanOffset + canopyReach);
+    }
+
+    private static int estimateCanopyReach(
+            TreeSpecies.ProceduralParams p, int maxH, TreeSpecies.CanopyParams c) {
+        int canopyReach = 0;
+        if (c.layers() != null && !c.layers().isEmpty()) {
+            for (TreeSpecies.CanopyParams.Layer l : c.layers()) {
+                canopyReach = Math.max(canopyReach, (int) Math.ceil(l.radius()) + 1);
             }
-            if (c.branches() != null) {
-                r = Math.max(r, (int) Math.ceil(c.branches().maxLength()) + 2);
-            }
+        } else if (c.volumeLayers()) {
+            double scale = presetProfileScale(p.profile());
+            int presetBaseRadius = Math.max(3, (int) Math.round(maxH / 2.0 * scale));
+            canopyReach = Math.max(canopyReach, presetBaseRadius + 1);
         }
-        return r;
+        if (c.branches() != null) {
+            TreeSpecies.BranchParams b = c.branches();
+            double branchLen = Math.max(0.0, b.maxLength());
+            double subLen = (b.subBranches() != null && b.subBranches().count() > 0)
+                    ? branchLen * Math.max(0.0, b.subBranches().lengthScale())
+                    : 0.0;
+            double clusterR = Math.max(
+                    Math.max(0.0, b.clusterRadius()),
+                    b.subBranches() != null ? Math.max(0.0, b.subBranches().clusterRadius()) : 0.0);
+            canopyReach = Math.max(canopyReach, (int) Math.ceil(branchLen + subLen + clusterR) + 2);
+        }
+        return canopyReach;
+    }
+
+    private static double presetProfileScale(String rawProfile) {
+        String profile = rawProfile != null ? rawProfile.toUpperCase(Locale.ROOT) : "OAK";
+        return switch (profile) {
+            case "BIRCH" -> 0.7;
+            case "SPRUCE", "PINE", "TAIGA" -> 0.55;
+            case "JUNGLE", "MEGA_JUNGLE" -> 0.45;
+            case "ACACIA" -> 0.6;
+            case "DARK_OAK_FLAT" -> 1.25;
+            default -> 1.0;
+        };
     }
 
     /**
@@ -124,9 +194,17 @@ public final class SaplingDropResolver {
      * region above a planted/placed tree. Always at least 12.
      */
     public static int estimateHeight(TreeSpecies species) {
+        return estimateHeight(species, null);
+    }
+
+    /**
+     * Rough total height (in blocks) of a species, traversing referenced child species
+     * when {@code species} is a group wrapper and {@code allSpecies} is supplied.
+     */
+    public static int estimateHeight(TreeSpecies species, Collection<TreeSpecies> allSpecies) {
         int h = 12;
         if (species == null) return h;
-        int radius = estimateCanopyRadius(species);
+        int radius = estimateCanopyRadius(species, allSpecies);
         if (species.procedural() != null) {
             h = Math.max(h, species.procedural().maxHeight() + radius + 2);
         }
@@ -134,6 +212,17 @@ public final class SaplingDropResolver {
             for (TreeSpecies.ProceduralParams p : species.treeDefinitions().values()) {
                 if (p != null) {
                     h = Math.max(h, p.maxHeight() + radius + 2);
+                }
+            }
+        }
+        if (species.trees() != null && allSpecies != null) {
+            for (TreeSpecies.WeightedSpecies ws : species.trees()) {
+                if (ws == null || ws.id() == null) continue;
+                String targetId = ws.id().contains(":") ? ws.id().substring(0, ws.id().indexOf(':')) : ws.id();
+                for (TreeSpecies candidate : allSpecies) {
+                    if (candidate != null && candidate != species && matchesSpeciesId(targetId, candidate.id())) {
+                        h = Math.max(h, estimateHeight(candidate, null));
+                    }
                 }
             }
         }

@@ -27,8 +27,28 @@ public final class TreeGenEventController implements AutoCloseable {
 
     private static final long PLACEMENT_DELAY_TICKS = 40L;
     private static final int MAX_PENDING_SLICES_PER_CHUNK = 32;
-
+    private static final int MAX_CACHED_ORIGINS = 8192;
+    private static final int MAX_OVERHANG_HALO_CHUNKS = 3;
     private record WorldChunkKey(String worldName, int chunkX, int chunkZ) {}
+
+    private record ChunkSpeciesKey(String worldName, int chunkX, int chunkZ, String speciesId) {}
+
+    private record AdjacentEdgeKey(
+            String worldName, int targetChunkX, int targetChunkZ, int originChunkX, int originChunkZ) {}
+
+    private record ResolvedTreeOrigin(int x, int y, int z, long treeSeed) {
+        Random treeRandom() {
+            return new Random(treeSeed);
+        }
+    }
+
+    private interface ChunkLandData {
+        int findTreeGroundY(int x, int z);
+
+        String getBlockState(int x, int y, int z);
+
+        String getBiomeKey(int x, int y, int z);
+    }
 
     private final Platform platform;
     private final Supplier<TreeGenConfig> configRef;
@@ -41,6 +61,11 @@ public final class TreeGenEventController implements AutoCloseable {
     private final Map<WorldChunkKey, List<Map<TreeModel.BlockPos, String>>> pendingChunkSlices =
             new ConcurrentHashMap<>();
     private final java.util.Set<WorldChunkKey> seenChunks = ConcurrentHashMap.newKeySet();
+    private final java.util.Set<WorldChunkKey> spawnedChunks = ConcurrentHashMap.newKeySet();
+    private final java.util.Set<AdjacentEdgeKey> completedAdjacentEdges =
+            ConcurrentHashMap.newKeySet();
+    private final Map<ChunkSpeciesKey, java.util.Optional<ResolvedTreeOrigin>> resolvedOriginCache =
+            new ConcurrentHashMap<>();
 
     public TreeGenEventController(Platform platform,
                                   Supplier<TreeGenConfig> configRef,
@@ -81,8 +106,8 @@ public final class TreeGenEventController implements AutoCloseable {
             }
         }
         subscriptions.clear();
+        resolvedOriginCache.clear();
     }
-
     public void onPlayerInteractBlock(PlayerInteractBlockContext ctx) {
         if (ctx == null || !ctx.mainHand()) {
             return;
@@ -242,11 +267,8 @@ public final class TreeGenEventController implements AutoCloseable {
         if (farmStore != null) {
             farmStore.flushPendingChunk(worldName, chunkX, chunkZ);
         }
-        if (!ctx.newChunk()) {
-            if (growthManager != null) {
-                growthManager.resumeChunk(worldName, chunkX, chunkZ);
-            }
-            return;
+        if (!ctx.newChunk() && growthManager != null) {
+            growthManager.resumeChunk(worldName, chunkX, chunkZ);
         }
         TreeGenConfig cfg = configRef.get();
         if (cfg == null || !cfg.useProcedural() || proceduralGenerator == null) {
@@ -257,14 +279,55 @@ public final class TreeGenEventController implements AutoCloseable {
         }
 
         long worldSeed = ctx.worldSeed();
-        for (TreeSpecies species : cfg.species().values()) {
-            if (!species.worldgen() || (!proceduralGenerator.canGenerate(species) && species.isFeatureTreesOnly())) {
-                continue;
+        if (ctx.newChunk()) {
+            if (worldName != null) {
+                spawnedChunks.add(new WorldChunkKey(worldName, chunkX, chunkZ));
             }
-            if (!proceduralGenerator.canGenerate(species)) {
-                continue;
-            }
+            spawnChunkTrees(worldName, chunkX, chunkZ, worldSeed, cfg);
+        }
+        completeAdjacentPreexistingChunkTrees(
+                worldName, chunkX, chunkZ, ctx.newChunk(), worldSeed, cfg);
+    }
 
+    private List<TreeSpecies> allKnownSpecies(TreeGenConfig cfg) {
+        List<TreeSpecies> all = new ArrayList<>();
+        if (cfg != null && cfg.species() != null) {
+            all.addAll(cfg.species().values());
+        }
+        TreeRegistry reg = registryRef != null ? registryRef.get() : null;
+        if (reg != null && reg.getSpeciesMap() != null) {
+            all.addAll(reg.getSpeciesMap().values());
+        }
+        return all;
+    }
+
+    private int computeMaxOverhangHaloChunks(
+            TreeGenConfig cfg, List<TreeSpecies> allSpecies) {
+        int maxHalo = 1;
+        if (cfg == null || cfg.species() == null) {
+            return maxHalo;
+        }
+        for (TreeSpecies species : cfg.species().values()) {
+            if (!species.worldgen() || !proceduralGenerator.canGenerate(species)) {
+                continue;
+            }
+            int reach = SaplingDropResolver.estimateCanopyRadius(species, allSpecies) + 6;
+            int chunks = Math.min(MAX_OVERHANG_HALO_CHUNKS, Math.max(1, (reach + 15) >> 4));
+            if (chunks > maxHalo) {
+                maxHalo = chunks;
+            }
+        }
+        return maxHalo;
+    }
+
+    private void spawnChunkTrees(
+            String worldName, int chunkX, int chunkZ, long worldSeed, TreeGenConfig cfg) {
+        ChunkLandData liveLand = liveChunkLandData(worldName);
+        List<TreeSpecies> allSpecies = allKnownSpecies(cfg);
+        for (TreeSpecies species : cfg.species().values()) {
+            if (!species.worldgen() || !proceduralGenerator.canGenerate(species)) {
+                continue;
+            }
             int spacing = Math.max(1, species.spacing());
             int salt = species.effectiveSalt();
             int[] targetChunk = io.github.dailystruggle.rtp.common.predict.DistributionSampler
@@ -272,70 +335,507 @@ public final class TreeGenEventController implements AutoCloseable {
             if (chunkX != targetChunk[0] || chunkZ != targetChunk[1]) {
                 continue;
             }
-            Random gridRandom = new Random(
-                    io.github.dailystruggle.rtp.common.predict.DistributionSampler
-                            .variantSeed(species.id(), (((long) chunkX) << 32) ^ (chunkZ & 0xFFFFFFFFL) ^ worldSeed));
-
-            int chosenX = Integer.MIN_VALUE;
-            int chosenY = Integer.MIN_VALUE;
-            int chosenZ = Integer.MIN_VALUE;
-            for (int attempt = 0; attempt < 4; attempt++) {
-                int candX = (chunkX << 4) + gridRandom.nextInt(16);
-                int candZ = (chunkZ << 4) + gridRandom.nextInt(16);
-                int candY = platform.findTreeGroundY(worldName, candX, candZ);
-                if (candY == Integer.MIN_VALUE) {
-                    continue;
+            ResolvedTreeOrigin origin =
+                    resolveChunkTreeOrigin(species, chunkX, chunkZ, worldSeed, cfg, liveLand);
+            if (worldName != null) {
+                if (resolvedOriginCache.size() >= MAX_CACHED_ORIGINS) {
+                    resolvedOriginCache.clear();
                 }
-                if (!cfg.allowsWaterGrowth(species.id())
-                        && (isLiquidOrAquaticState(platform.getBlockState(worldName, candX, candY, candZ))
-                                || isLiquidOrAquaticState(platform.getBlockState(worldName, candX, candY + 1, candZ)))) {
-                    continue;
-                }
-                String exactBiome = platform.getBiomeKey(worldName, candX, candY, candZ);
-                if (species.allowsWorldgenBiome(exactBiome)) {
-                    chosenX = candX;
-                    chosenY = candY;
-                    chosenZ = candZ;
-                    break;
-                }
+                resolvedOriginCache.put(
+                        new ChunkSpeciesKey(worldName, chunkX, chunkZ, species.id()),
+                        java.util.Optional.ofNullable(origin));
             }
-            if (chosenY == Integer.MIN_VALUE) {
+            if (origin == null) {
                 continue;
             }
-            int x = chosenX;
-            int y = chosenY;
-            int z = chosenZ;
-
-            Random treeRandom = new Random(gridRandom.nextLong());
-            if (species.replaceVanilla()) {
-                Map<Long, Map<TreeModel.BlockPos, String>> clearingChunks = new HashMap<>();
-                int radius = 2;
-                for (int dx = -radius; dx <= radius; dx++) {
-                    for (int dz = -radius; dz <= radius; dz++) {
-                        for (int dy = 1; dy <= 40; dy++) {
-                            int bx = x + dx;
-                            int by = y + dy;
-                            int bz = z + dz;
-                            int bcx = bx >> 4;
-                            int bcz = bz >> 4;
-                            long key = TreeModel.chunkKey(bcx, bcz);
-                            clearingChunks.computeIfAbsent(key, k -> new LinkedHashMap<>())
-                                    .put(new TreeModel.BlockPos(bx, by, bz), "minecraft:void_air");
-                        }
-                    }
-                }
-                clearingChunks.forEach((key, blocks) -> {
-                    int bcx = TreeModel.chunkX(key);
-                    int bcz = TreeModel.chunkZ(key);
-                    placeOrDeferChunkBlocks(worldName, bcx, bcz, blocks);
-                });
-            }
-            placeProceduralByChunk(worldName, x, y + 1, z, species, treeRandom);
+            int x = origin.x();
+            int y = origin.y();
+            int z = origin.z();
+            placeProceduralWithClearingByChunk(
+                    worldName, chunkX, chunkZ, x, y + 1, z, species, origin.treeRandom(), species.replaceVanilla());
             if (farmStore != null) {
-                int radius = SaplingDropResolver.estimateCanopyRadius(species);
-                int height = SaplingDropResolver.estimateHeight(species);
+                int radius = SaplingDropResolver.estimateCanopyRadius(species, allSpecies);
+                int height = SaplingDropResolver.estimateHeight(species, allSpecies);
                 farmStore.recordTree(worldName, x, y + 1, z, radius, height, species.id());
             }
+        }
+    }
+
+    /**
+     * Completes overhanging procedural trees between {@code (chunkX, chunkZ)} and surrounding
+     * chunks in its overhang halo, evaluating both incoming and outgoing edges for already-loaded
+     * neighbors so out-of-order pregenerated chunk loads never clip trees at chunk boundaries.
+     */
+    private void completeAdjacentPreexistingChunkTrees(
+            String worldName,
+            int chunkX,
+            int chunkZ,
+            boolean targetIsNewChunk,
+            long worldSeed,
+            TreeGenConfig cfg) {
+        if (worldName == null || !platform.isChunkLoaded(worldName, chunkX, chunkZ)) {
+            return;
+        }
+        List<TreeSpecies> allSpecies = allKnownSpecies(cfg);
+        int maxHalo = computeMaxOverhangHaloChunks(cfg, allSpecies);
+        for (int dcx = -maxHalo; dcx <= maxHalo; dcx++) {
+            for (int dcz = -maxHalo; dcz <= maxHalo; dcz++) {
+                if (dcx != 0 || dcz != 0) {
+                    completeHaloPair(
+                            worldName,
+                            chunkX,
+                            chunkZ,
+                            chunkX + dcx,
+                            chunkZ + dcz,
+                            dcx,
+                            dcz,
+                            targetIsNewChunk,
+                            worldSeed,
+                            cfg,
+                            allSpecies);
+                }
+            }
+        }
+    }
+
+    private void completeHaloPair(
+            String worldName,
+            int chunkX,
+            int chunkZ,
+            int adjCX,
+            int adjCZ,
+            int dcx,
+            int dcz,
+            boolean targetIsNewChunk,
+            long worldSeed,
+            TreeGenConfig cfg,
+            List<TreeSpecies> allSpecies) {
+        WorldChunkKey adjKey = new WorldChunkKey(worldName, adjCX, adjCZ);
+        boolean adjLoadedInMemory =
+                seenChunks.contains(adjKey) && platform.isChunkLoaded(worldName, adjCX, adjCZ);
+        boolean adjSpawnedInSession = spawnedChunks.contains(adjKey);
+        boolean allowDiskFallback =
+                targetIsNewChunk
+                        && Math.abs(dcx) <= 1
+                        && Math.abs(dcz) <= 1
+                        && !adjSpawnedInSession;
+        if (adjLoadedInMemory || allowDiskFallback || adjSpawnedInSession) {
+            completeAdjacentChunkEdge(
+                    worldName,
+                    chunkX,
+                    chunkZ,
+                    adjCX,
+                    adjCZ,
+                    allowDiskFallback,
+                    worldSeed,
+                    cfg,
+                    allSpecies);
+        }
+        if (adjLoadedInMemory) {
+            completeAdjacentChunkEdge(
+                    worldName,
+                    adjCX,
+                    adjCZ,
+                    chunkX,
+                    chunkZ,
+                    false,
+                    worldSeed,
+                    cfg,
+                    allSpecies);
+        }
+    }
+
+    private void completeAdjacentChunkEdge(
+            String worldName,
+            int chunkX,
+            int chunkZ,
+            int adjCX,
+            int adjCZ,
+            boolean allowSavedDiskFallback,
+            long worldSeed,
+            TreeGenConfig cfg,
+            List<TreeSpecies> allSpecies) {
+        AdjacentEdgeKey edgeKey = new AdjacentEdgeKey(worldName, chunkX, chunkZ, adjCX, adjCZ);
+        if (completedAdjacentEdges.contains(edgeKey)) {
+            return;
+        }
+        List<TreeSpecies> matchingSpecies =
+                matchingProceduralSpeciesForChunk(
+                        adjCX, adjCZ, chunkX, chunkZ, worldSeed, cfg, allSpecies);
+        if (matchingSpecies.isEmpty()) {
+            completedAdjacentEdges.add(edgeKey);
+            return;
+        }
+        ChunkLandData adjLand = null;
+        boolean landResolutionAttempted = false;
+        Map<TreeModel.BlockPos, String> combinedSlice = new LinkedHashMap<>();
+        for (TreeSpecies species : matchingSpecies) {
+            ChunkSpeciesKey cacheKey =
+                    new ChunkSpeciesKey(worldName, adjCX, adjCZ, species.id());
+            java.util.Optional<ResolvedTreeOrigin> cached = resolvedOriginCache.get(cacheKey);
+            ResolvedTreeOrigin origin;
+            if (cached != null) {
+                origin = cached.orElse(null);
+            } else {
+                if (!landResolutionAttempted) {
+                    landResolutionAttempted = true;
+                    adjLand = resolvePreexistingChunkLandData(
+                            worldName, adjCX, adjCZ, allowSavedDiskFallback);
+                }
+                if (adjLand == null) {
+                    return;
+                }
+                origin = resolveOrCacheChunkTreeOrigin(
+                        worldName, species, adjCX, adjCZ, worldSeed, cfg, adjLand);
+            }
+            if (origin != null) {
+                accumulateAdjacentSpeciesSlice(
+                        worldName, chunkX, chunkZ, species, origin, combinedSlice, allSpecies);
+            }
+        }
+        completedAdjacentEdges.add(edgeKey);
+        if (combinedSlice.isEmpty()) {
+            return;
+        }
+        Map<TreeModel.BlockPos, String> replaceable =
+                filterLoadedChunkReplaceable(worldName, chunkX, chunkZ, combinedSlice);
+        if (!replaceable.isEmpty()) {
+            platform.setBlocks(worldName, chunkX, chunkZ, replaceable);
+        }
+    }
+
+    private List<TreeSpecies> matchingProceduralSpeciesForChunk(
+            int adjCX,
+            int adjCZ,
+            int targetCX,
+            int targetCZ,
+            long worldSeed,
+            TreeGenConfig cfg,
+            List<TreeSpecies> allSpecies) {
+        List<TreeSpecies> matching = new ArrayList<>();
+        for (TreeSpecies species : cfg.species().values()) {
+            if (!species.worldgen() || !proceduralGenerator.canGenerate(species)) {
+                continue;
+            }
+            int spacing = Math.max(1, species.spacing());
+            int[] targetChunk = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                    .gridCellSample(adjCX, adjCZ, spacing, worldSeed, species.effectiveSalt());
+            if (adjCX == targetChunk[0]
+                    && adjCZ == targetChunk[1]
+                    && canSpeciesReachTargetChunk(
+                            species, adjCX, adjCZ, targetCX, targetCZ, worldSeed, allSpecies)) {
+                matching.add(species);
+            }
+        }
+        return matching;
+    }
+
+    private static boolean canSpeciesReachTargetChunk(
+            TreeSpecies species,
+            int adjCX,
+            int adjCZ,
+            int targetCX,
+            int targetCZ,
+            long worldSeed,
+            List<TreeSpecies> allSpecies) {
+        int maxReach = SaplingDropResolver.estimateCanopyRadius(species, allSpecies) + 6;
+        int minTargetX = targetCX << 4;
+        int maxTargetX = minTargetX + 15;
+        int minTargetZ = targetCZ << 4;
+        int maxTargetZ = minTargetZ + 15;
+        Random gridRandom = new Random(
+                io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                        .variantSeed(
+                                species.id(),
+                                (((long) adjCX) << 32) ^ (adjCZ & 0xFFFFFFFFL) ^ worldSeed));
+        for (int attempt = 0; attempt < 4; attempt++) {
+            int candX = (adjCX << 4) + gridRandom.nextInt(16);
+            int candZ = (adjCZ << 4) + gridRandom.nextInt(16);
+            if (candX + maxReach >= minTargetX
+                    && candX - maxReach <= maxTargetX
+                    && candZ + maxReach >= minTargetZ
+                    && candZ - maxReach <= maxTargetZ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void accumulateAdjacentSpeciesSlice(
+            String worldName,
+            int chunkX,
+            int chunkZ,
+            TreeSpecies species,
+            ResolvedTreeOrigin origin,
+            Map<TreeModel.BlockPos, String> combinedSlice,
+            List<TreeSpecies> allSpecies) {
+        SegmentedTreeModel model =
+                proceduralGenerator.getOrGenerateModel(species, origin.treeRandom());
+        if (model == null || !model.intersectsChunk(origin.x(), origin.z(), chunkX, chunkZ)) {
+            return;
+        }
+        Map<TreeModel.BlockPos, String> slice =
+                model.sliceForChunk(origin.x(), origin.y() + 1, origin.z(), chunkX, chunkZ);
+        if (slice.isEmpty()) {
+            return;
+        }
+        mergeSliceInto(combinedSlice, slice);
+        if (farmStore != null) {
+            int radius = SaplingDropResolver.estimateCanopyRadius(species, allSpecies);
+            int height = SaplingDropResolver.estimateHeight(species, allSpecies);
+            farmStore.recordTree(
+                    worldName, origin.x(), origin.y() + 1, origin.z(), radius, height, species.id());
+        }
+    }
+    private ResolvedTreeOrigin resolveOrCacheChunkTreeOrigin(
+            String worldName,
+            TreeSpecies species,
+            int chunkX,
+            int chunkZ,
+            long worldSeed,
+            TreeGenConfig cfg,
+            ChunkLandData landData) {
+        if (worldName == null) {
+            return resolveChunkTreeOrigin(species, chunkX, chunkZ, worldSeed, cfg, landData);
+        }
+        ChunkSpeciesKey key = new ChunkSpeciesKey(worldName, chunkX, chunkZ, species.id());
+        java.util.Optional<ResolvedTreeOrigin> cached = resolvedOriginCache.get(key);
+        if (cached != null) {
+            return cached.orElse(null);
+        }
+        ResolvedTreeOrigin resolved =
+                resolveChunkTreeOrigin(species, chunkX, chunkZ, worldSeed, cfg, landData);
+        if (resolvedOriginCache.size() >= MAX_CACHED_ORIGINS) {
+            resolvedOriginCache.clear();
+        }
+        resolvedOriginCache.put(key, java.util.Optional.ofNullable(resolved));
+        return resolved;
+    }
+
+    private ResolvedTreeOrigin resolveChunkTreeOrigin(
+            TreeSpecies species,
+            int chunkX,
+            int chunkZ,
+            long worldSeed,
+            TreeGenConfig cfg,
+            ChunkLandData landData) {
+        Random gridRandom = new Random(
+                io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                        .variantSeed(
+                                species.id(),
+                                (((long) chunkX) << 32) ^ (chunkZ & 0xFFFFFFFFL) ^ worldSeed));
+        int chosenX = Integer.MIN_VALUE;
+        int chosenY = Integer.MIN_VALUE;
+        int chosenZ = Integer.MIN_VALUE;
+        for (int attempt = 0; attempt < 4; attempt++) {
+            int candX = (chunkX << 4) + gridRandom.nextInt(16);
+            int candZ = (chunkZ << 4) + gridRandom.nextInt(16);
+            int candY = landData.findTreeGroundY(candX, candZ);
+            if (candY == Integer.MIN_VALUE) {
+                continue;
+            }
+            String exactBiome = landData.getBiomeKey(candX, candY, candZ);
+            if (!species.allowsWorldgenBiome(exactBiome)) {
+                continue;
+            }
+            if (!cfg.allowsWaterGrowth(species.id())
+                    && (isLiquidOrAquaticState(landData.getBlockState(candX, candY, candZ))
+                            || isLiquidOrAquaticState(
+                                    landData.getBlockState(candX, candY + 1, candZ)))) {
+                continue;
+            }
+            chosenX = candX;
+            chosenY = candY;
+            chosenZ = candZ;
+            break;
+        }
+        if (chosenY == Integer.MIN_VALUE) {
+            return null;
+        }
+        return new ResolvedTreeOrigin(chosenX, chosenY, chosenZ, gridRandom.nextLong());
+    }
+
+    private ChunkLandData resolvePreexistingChunkLandData(
+            String worldName, int chunkX, int chunkZ, boolean allowSavedDiskFallback) {
+        WorldChunkKey key = new WorldChunkKey(worldName, chunkX, chunkZ);
+        if (seenChunks.contains(key) && platform.isChunkLoaded(worldName, chunkX, chunkZ)) {
+            return liveChunkLandData(worldName);
+        }
+        if (!allowSavedDiskFallback) {
+            return null;
+        }
+        io.github.dailystruggle.anvil.AnvilChunkView view =
+                readSavedChunkView(worldName, chunkX, chunkZ);
+        if (view != null) {
+            return savedChunkLandData(worldName, view);
+        }
+        return null;
+    }
+
+    private ChunkLandData liveChunkLandData(String worldName) {
+        return new ChunkLandData() {
+            private final Map<Long, Integer> groundYMemo = new HashMap<>();
+
+            @Override
+            public int findTreeGroundY(int x, int z) {
+                long colKey = (((long) x) << 32) ^ (z & 0xFFFFFFFFL);
+                Integer cachedY = groundYMemo.get(colKey);
+                if (cachedY != null) {
+                    return cachedY;
+                }
+                int y = platform.findTreeGroundY(worldName, x, z);
+                if (y == Integer.MIN_VALUE) {
+                    groundYMemo.put(colKey, Integer.MIN_VALUE);
+                    return Integer.MIN_VALUE;
+                }
+                int minY = platform.getMinHeight(worldName);
+                while (y > minY) {
+                    String state = platform.getBlockState(worldName, x, y, z);
+                    if (state == null) {
+                        groundYMemo.put(colKey, y);
+                        return y;
+                    }
+                    if (!platform.isReplaceable(worldName, x, y, z)
+                            && !isTreeCanopyOrTrunkState(state)) {
+                        groundYMemo.put(colKey, y);
+                        return y;
+                    }
+                    y--;
+                }
+                groundYMemo.put(colKey, Integer.MIN_VALUE);
+                return Integer.MIN_VALUE;
+            }
+
+            @Override
+            public String getBlockState(int x, int y, int z) {
+                return platform.getBlockState(worldName, x, y, z);
+            }
+
+            @Override
+            public String getBiomeKey(int x, int y, int z) {
+                return platform.getBiomeKey(worldName, x, y, z);
+            }
+        };
+    }
+
+    private ChunkLandData savedChunkLandData(
+            String worldName, io.github.dailystruggle.anvil.AnvilChunkView view) {
+        return new ChunkLandData() {
+            @Override
+            public int findTreeGroundY(int x, int z) {
+                return findSavedTreeGroundY(worldName, view, x & 15, z & 15);
+            }
+
+            @Override
+            public String getBlockState(int x, int y, int z) {
+                String state = view.blockIdAt(x & 15, y, z & 15);
+                return state != null ? state : "minecraft:air";
+            }
+
+            @Override
+            public String getBiomeKey(int x, int y, int z) {
+                String biome = view.getBiomeAt(x & 15, y, z & 15);
+                if (biome != null && !biome.isBlank()) {
+                    return biome;
+                }
+                java.util.Set<String> present = view.getBiomesPresent();
+                if (present != null) {
+                    for (String candidate : present) {
+                        return candidate;
+                    }
+                }
+                return "minecraft:plains";
+            }
+        };
+    }
+
+    private int findSavedTreeGroundY(
+            String worldName,
+            io.github.dailystruggle.anvil.AnvilChunkView view,
+            int localX,
+            int localZ) {
+        int maxSecY = Integer.MIN_VALUE;
+        int minSecY = Integer.MAX_VALUE;
+        for (io.github.dailystruggle.anvil.PaletteSection sec : view.sections()) {
+            if (sec.sectionY() > maxSecY) maxSecY = sec.sectionY();
+            if (sec.sectionY() < minSecY) minSecY = sec.sectionY();
+        }
+        if (maxSecY != Integer.MIN_VALUE) {
+            int topY = maxSecY * 16 + 15;
+            int minY = Math.min(platform.getMinHeight(worldName), minSecY * 16);
+            for (int y = topY; y > minY; y--) {
+                int secY = Math.floorDiv(y, 16);
+                if (!view.hasSection(secY)) {
+                    y = secY * 16;
+                    continue;
+                }
+                String state = view.blockIdAt(localX, y, localZ);
+                if (state != null
+                        && !isSavedStateReplaceable(state)
+                        && !isTreeCanopyOrTrunkState(state)) {
+                    return y;
+                }
+            }
+        }
+        return view.getHeightmapTopY(localX, localZ);
+    }
+
+    private io.github.dailystruggle.anvil.AnvilChunkView readSavedChunkView(
+            String worldName, int chunkX, int chunkZ) {
+        if (worldName == null) {
+            return null;
+        }
+        java.nio.file.Path worldFolder = platform.getWorldFolder(worldName);
+        if (worldFolder == null) {
+            return null;
+        }
+        io.github.dailystruggle.anvil.RegionFileResolver.ResolvedRegion resolved =
+                io.github.dailystruggle.anvil.RegionFileResolver.resolveExisting(
+                        worldFolder, "", chunkX, chunkZ);
+        if (resolved == null) {
+            resolved = io.github.dailystruggle.anvil.RegionFileResolver.resolve(
+                    worldFolder, "", chunkX, chunkZ);
+        }
+        if (resolved == null || resolved.path() == null || resolved.reader() == null) {
+            return null;
+        }
+        int rx = chunkX & 31;
+        int rz = chunkZ & 31;
+        try {
+            if (resolved.reader() == io.github.dailystruggle.anvil.LcaRegionReader.INSTANCE) {
+                return io.github.dailystruggle.anvil.LcaRegionReader.readChunkViewFromFile(
+                        resolved.path(), rx, rz);
+            }
+            if (resolved.reader() == io.github.dailystruggle.anvil.AnvilReader.INSTANCE) {
+                io.github.dailystruggle.anvil.AnvilReader.ChunkEntry entry =
+                        io.github.dailystruggle.anvil.AnvilSectorReader.readChunkEntry(
+                                resolved.path(), chunkX, chunkZ);
+                if (entry != null
+                        && entry.root != null
+                        && io.github.dailystruggle.anvil.RegionFileReader.isFullChunkRoot(entry.root)) {
+                    return io.github.dailystruggle.anvil.AnvilReader.toView(entry.root);
+                }
+                return null;
+            }
+            try (io.github.dailystruggle.anvil.AnvilRegionByteCache.Lease lease =
+                    io.github.dailystruggle.anvil.AnvilRegionByteCache.acquire(resolved.path())) {
+                if (lease == null) {
+                    return null;
+                }
+                io.github.dailystruggle.anvil.AnvilReader.ChunkEntry entry =
+                        resolved.reader().readChunk(
+                                lease.buffer(), lease.length(), rx, rz);
+                if (entry != null
+                        && entry.root != null
+                        && io.github.dailystruggle.anvil.RegionFileReader.isFullChunkRoot(entry.root)) {
+                    return io.github.dailystruggle.anvil.AnvilReader.toView(entry.root);
+                }
+                return null;
+            }
+        } catch (java.io.IOException | RuntimeException ex) {
+            platform.logger().warning("Failed to read saved chunk (" + chunkX + "," + chunkZ
+                    + ") in " + worldName + ": " + ex.getMessage());
+            return null;
         }
     }
 
@@ -358,6 +858,36 @@ public final class TreeGenEventController implements AutoCloseable {
                 || base.equals("minecraft:tall_seagrass");
     }
 
+    private static boolean isTreeCanopyOrTrunkState(String canonicalState) {
+        if (canonicalState == null || canonicalState.isBlank()) {
+            return false;
+        }
+        if (isSavedStateReplaceable(canonicalState)) {
+            return true;
+        }
+        int bracket = canonicalState.indexOf('[');
+        String base = (bracket >= 0 ? canonicalState.substring(0, bracket) : canonicalState)
+                .toLowerCase(Locale.ROOT);
+        if (!base.contains(":")) {
+            base = "minecraft:" + base;
+        }
+        return base.endsWith("_log")
+                || base.endsWith("_wood")
+                || base.endsWith("_stem")
+                || base.endsWith("_hyphae")
+                || base.endsWith("_mushroom_block")
+                || base.equals("minecraft:shroomlight")
+                || base.equals("minecraft:mangrove_roots")
+                || base.equals("minecraft:bamboo")
+                || base.equals("minecraft:glow_lichen")
+                || base.equals("minecraft:cobweb")
+                || base.equals("minecraft:pink_petals")
+                || base.equals("minecraft:hanging_roots")
+                || base.equals("minecraft:spore_blossom")
+                || base.equals("minecraft:bee_nest")
+                || base.equals("minecraft:cocoa");
+    }
+
     /**
      * Generates a procedural tree at {@code (ox, oy, oz)} and places each per-chunk slice
      * immediately if its chunk is loaded, retroactively patches saved chunks on disk via
@@ -367,23 +897,79 @@ public final class TreeGenEventController implements AutoCloseable {
      */
     boolean placeProceduralByChunk(
             String worldName, int ox, int oy, int oz, TreeSpecies species, Random rng) {
+        return placeProceduralWithClearingByChunk(
+                worldName, ox >> 4, oz >> 4, ox, oy, oz, species, rng, false);
+    }
+
+    private boolean placeProceduralWithClearingByChunk(
+            String worldName,
+            int originChunkX,
+            int originChunkZ,
+            int ox,
+            int oy,
+            int oz,
+            TreeSpecies species,
+            Random rng,
+            boolean clearVanillaColumn) {
         if (proceduralGenerator == null || species == null) return false;
         SegmentedTreeModel model = proceduralGenerator.getOrGenerateModel(species, rng);
         if (model == null) {
             platform.logger().warning("Placement failed: buildModel returned null for species " + species.id());
             return false;
         }
-        Map<Long, Map<TreeModel.BlockPos, String>> chunks = model.partitionByChunk(ox, oy, oz);
-        List<Long> chunkKeys = new ArrayList<>(chunks.keySet());
+        Map<Long, Map<TreeModel.BlockPos, String>> treeChunks = model.partitionByChunk(ox, oy, oz);
+        Map<Long, Map<TreeModel.BlockPos, String>> mergedByChunk = new HashMap<>();
+        if (clearVanillaColumn) {
+            populateClearingSlices(originChunkX, originChunkZ, ox, oy - 1, oz, treeChunks, mergedByChunk);
+        }
+        for (Map.Entry<Long, Map<TreeModel.BlockPos, String>> e : treeChunks.entrySet()) {
+            mergedByChunk.computeIfAbsent(e.getKey(), k -> new LinkedHashMap<>())
+                    .putAll(e.getValue());
+        }
+        List<Long> chunkKeys = new ArrayList<>(mergedByChunk.keySet());
         java.util.Collections.sort(chunkKeys);
         for (long key : chunkKeys) {
             int cx = TreeModel.chunkX(key);
             int cz = TreeModel.chunkZ(key);
-            placeOrDeferChunkBlocks(worldName, cx, cz, chunks.get(key));
+            boolean wasLoaded = platform.isChunkLoaded(worldName, cx, cz);
+            placeOrDeferChunkBlocks(worldName, cx, cz, mergedByChunk.get(key));
+            if ((cx != originChunkX || cz != originChunkZ) && wasLoaded) {
+                completedAdjacentEdges.add(
+                        new AdjacentEdgeKey(worldName, cx, cz, originChunkX, originChunkZ));
+            }
         }
         return true;
     }
 
+    private static void populateClearingSlices(
+            int originChunkX,
+            int originChunkZ,
+            int ox,
+            int groundY,
+            int oz,
+            Map<Long, Map<TreeModel.BlockPos, String>> treeChunks,
+            Map<Long, Map<TreeModel.BlockPos, String>> mergedByChunk) {
+        int radius = 2;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                int bx = ox + dx;
+                int bz = oz + dz;
+                if ((bx >> 4) != originChunkX || (bz >> 4) != originChunkZ) {
+                    continue;
+                }
+                long key = TreeModel.chunkKey(originChunkX, originChunkZ);
+                Map<TreeModel.BlockPos, String> treeSlice = treeChunks.get(key);
+                for (int dy = 1; dy <= 40; dy++) {
+                    int by = groundY + dy;
+                    TreeModel.BlockPos pos = new TreeModel.BlockPos(bx, by, bz);
+                    if (treeSlice == null || !treeSlice.containsKey(pos)) {
+                        mergedByChunk.computeIfAbsent(key, k -> new LinkedHashMap<>())
+                                .put(pos, "minecraft:void_air");
+                    }
+                }
+            }
+        }
+    }
     private void placeOrDeferChunkBlocks(
             String worldName, int chunkX, int chunkZ, Map<TreeModel.BlockPos, String> blocks) {
         if (blocks == null || blocks.isEmpty()) return;
@@ -423,19 +1009,43 @@ public final class TreeGenEventController implements AutoCloseable {
         if (slices == null || slices.isEmpty()) {
             return;
         }
-        Map<TreeModel.BlockPos, String> merged = new LinkedHashMap<>();
+        Map<TreeModel.BlockPos, String> merged;
         synchronized (slices) {
-            for (Map<TreeModel.BlockPos, String> slice : slices) {
-                if (slice != null) {
-                    merged.putAll(slice);
-                }
-            }
+            merged = mergeSlices(slices);
         }
         if (merged.isEmpty()) {
             return;
         }
         if (patchSavedChunkIfPresent(key.worldName(), key.chunkX(), key.chunkZ(), merged)) {
             pendingChunkSlices.remove(key, slices);
+        }
+    }
+
+    private static Map<TreeModel.BlockPos, String> mergeSlices(
+            List<Map<TreeModel.BlockPos, String>> slices) {
+        Map<TreeModel.BlockPos, String> merged = new LinkedHashMap<>();
+        for (Map<TreeModel.BlockPos, String> slice : slices) {
+            if (slice != null) {
+                mergeSliceInto(merged, slice);
+            }
+        }
+        return merged;
+    }
+
+    private static void mergeSliceInto(
+            Map<TreeModel.BlockPos, String> target, Map<TreeModel.BlockPos, String> incoming) {
+        for (Map.Entry<TreeModel.BlockPos, String> e : incoming.entrySet()) {
+            TreeModel.BlockPos pos = e.getKey();
+            String nextState = e.getValue();
+            if (nextState == null) continue;
+            String existing = target.get(pos);
+            if (existing != null
+                    && !"minecraft:void_air".equals(existing)
+                    && ("minecraft:void_air".equals(nextState)
+                            || (GrowthPlanner.isWood(existing) && !GrowthPlanner.isWood(nextState)))) {
+                continue;
+            }
+            target.put(pos, nextState);
         }
     }
 
@@ -456,6 +1066,11 @@ public final class TreeGenEventController implements AutoCloseable {
                     pos.x(), pos.y(), pos.z(), e.getValue()));
         }
         try {
+            if (io.github.dailystruggle.anvil.RegionFileResolver.patchChunkBlocks(
+                    worldFolder, "", chunkX, chunkZ, patches, TreeGenEventController::isSavedStateReplaceable)) {
+                return true;
+            }
+            io.github.dailystruggle.anvil.RegionFileResolver.invalidateMemo();
             return io.github.dailystruggle.anvil.RegionFileResolver.patchChunkBlocks(
                     worldFolder, "", chunkX, chunkZ, patches, TreeGenEventController::isSavedStateReplaceable);
         } catch (java.io.IOException ex) {
@@ -464,7 +1079,6 @@ public final class TreeGenEventController implements AutoCloseable {
             return false;
         }
     }
-
     private static boolean isSavedStateReplaceable(String canonicalState) {
         if (canonicalState == null || canonicalState.isBlank()) {
             return true;
@@ -500,14 +1114,13 @@ public final class TreeGenEventController implements AutoCloseable {
         List<Map<TreeModel.BlockPos, String>> slices =
                 pendingChunkSlices.remove(new WorldChunkKey(worldName, chunkX, chunkZ));
         if (slices == null || slices.isEmpty()) return;
-        for (Map<TreeModel.BlockPos, String> slice : slices) {
-            Map<TreeModel.BlockPos, String> replaceable = filterLoadedChunkReplaceable(worldName, chunkX, chunkZ, slice);
-            if (!replaceable.isEmpty()) {
-                platform.setBlocks(worldName, chunkX, chunkZ, replaceable);
-            }
+        Map<TreeModel.BlockPos, String> merged = mergeSlices(slices);
+        Map<TreeModel.BlockPos, String> replaceable =
+                filterLoadedChunkReplaceable(worldName, chunkX, chunkZ, merged);
+        if (!replaceable.isEmpty()) {
+            platform.setBlocks(worldName, chunkX, chunkZ, replaceable);
         }
     }
-
     /**
      * Filters {@code slice} for already-loaded chunk {@code (chunkX, chunkZ)} without synchronous
      * chunk loading (S-005).
@@ -521,14 +1134,23 @@ public final class TreeGenEventController implements AutoCloseable {
         for (Map.Entry<TreeModel.BlockPos, String> entry : slice.entrySet()) {
             TreeModel.BlockPos pos = entry.getKey();
             String state = entry.getValue();
-            if ("minecraft:void_air".equals(state)
-                    || isLoadedBlockReplaceable(worldName, pos.x(), pos.y(), pos.z())) {
+            String current = platform.getBlockState(worldName, pos.x(), pos.y(), pos.z());
+            if (state.equals(current)) {
+                continue;
+            }
+            if ("minecraft:void_air".equals(state)) {
+                if (current == null
+                        || (!TreeBlockBatcher.isPlainAir(current)
+                                && (isLoadedBlockReplaceable(worldName, pos.x(), pos.y(), pos.z())
+                                        || isTreeCanopyOrTrunkState(current)))) {
+                    replaceable.put(pos, state);
+                }
+            } else if (isLoadedBlockReplaceable(worldName, pos.x(), pos.y(), pos.z())) {
                 replaceable.put(pos, state);
             }
         }
         return replaceable;
     }
-
     private boolean isLoadedBlockReplaceable(String worldName, int x, int y, int z) {
         if (!platform.isChunkLoaded(worldName, x >> 4, z >> 4)) {
             return false;
