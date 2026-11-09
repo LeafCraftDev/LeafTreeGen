@@ -59,14 +59,14 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}"
     compileOnly "me.lucko:fabric-permissions-api:${permissionsApiVersion}"
 
-    api "io.github.dailystruggle:server-api:${rootProject.version}"
-    api "io.github.dailystruggle:commands-api:${rootProject.version}"
+    api project(':server-api')
+    api project(':commands-api')
     if (hasRtpCore) {
         api project(':rtp-api')
         api project(':rtp-core')
     }
     if (findProject(':anvil-api') != null) {
-        api "io.github.dailystruggle:anvil-api:${rootProject.version}"
+        api project(':anvil-api')
     }
     // Compile-only against fabric-common so the unobf carrier can reuse
     // platform-neutral types (interfaces, base classes that don't name NM)
@@ -78,7 +78,7 @@ dependencies {
     // the unobf carrier (effectsapi.fabric_unobf.*). The unobf source set
     // from effects-api-ADR-006 is the actual artifact consumed at runtime;
     // see that ADR for the source-set wiring.
-    compileOnly "io.github.dailystruggle:effects-api:${rootProject.version}"
+    compileOnly project(':effects-api')
     // Names effectsapi.fabric_unobf.FabricEffectRuntimeUnobf and
     // effectsapi.fabric_unobf.FabricEffectsInitializer from FabricEffectsHandlerUnobf.
     compileOnly project(':effects-api:effects-api-fabric-unobf')

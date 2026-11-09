@@ -8,7 +8,7 @@ dependencies {
     implementation project(':resource:LeafTreeGen:treegen-common')
     implementation(project(':bukkit:bukkit-common')) { transitive = false }
     compileOnly 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
-    implementation "io.github.dailystruggle:commands-api:${rootProject.version}"
+    implementation project(':commands-api')
 
     testImplementation 'io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT'
 }

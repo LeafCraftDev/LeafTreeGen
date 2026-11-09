@@ -80,8 +80,8 @@ if (!hasRtpCore) {
 }
 
 dependencies {
-    api "io.github.dailystruggle:server-api:${rootProject.version}"
-    api "io.github.dailystruggle:effects-api:${rootProject.version}"
+    api project(':server-api')
+    api project(':effects-api')
     // Platform-free abstractions consumed by every NeoForge adapter class.
     // Reused 1:1 from the platform-neutral modules (NEOFORGE_NOTES.md section 3).
     if (hasRtpCore) {
@@ -91,11 +91,11 @@ dependencies {
     // commands-api-ADR-001 — Brigadier Bridge. The bridge classes live in
     // :commands-api; this module supplies the NeoForge-side registration
     // trampoline (RegisterCommandsEvent), see NeoForgeCommandRegistrar.
-    api "io.github.dailystruggle:commands-api:${rootProject.version}"
+    api project(':commands-api')
     // ADR-016 — anvil pre-filter. Platform-neutral .mca decoder; same .mca
     // substrate as Fabric (NEOFORGE_NOTES.md section 3), reused unchanged.
     if (findProject(':anvil-api') != null) {
-        api "io.github.dailystruggle:anvil-api:${rootProject.version}"
+        api project(':anvil-api')
     }
     testImplementation 'com.mojang:brigadier:1.2.9'
 }

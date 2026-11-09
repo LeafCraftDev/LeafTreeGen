@@ -11,11 +11,11 @@ java {
 
 dependencies {
     compileOnly 'com.google.code.gson:gson:2.11.0'
-    api "io.github.dailystruggle:server-api:${rootProject.version}"
-    api "io.github.dailystruggle:yaml-api:${rootProject.version}"
-    api "io.github.dailystruggle:commands-api:${rootProject.version}"
-    api "io.github.dailystruggle:predict-api:${rootProject.version}"
-    api "io.github.dailystruggle:anvil-api:${rootProject.version}"
+    api project(':server-api')
+    api project(':yaml-api')
+    api project(':commands-api')
+    api project(':predict-api')
+    api project(':anvil-api')
 
     testImplementation 'com.google.code.gson:gson:2.11.0'
 }

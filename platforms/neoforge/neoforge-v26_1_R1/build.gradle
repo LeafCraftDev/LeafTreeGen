@@ -95,6 +95,6 @@ dependencies {
     // re-exports (rtp-api / rtp-core / commands-api / anvil-api). Compiled to
     // Java 21 bytecode and fully loadable from this Java 25 module's runtime.
     api project(':neoforge:neoforge-common')
-    api "io.github.dailystruggle:server-api:${rootProject.version}"
-    api "io.github.dailystruggle:commands-api:${rootProject.version}"
+    api project(':server-api')
+    api project(':commands-api')
 }

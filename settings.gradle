@@ -116,6 +116,7 @@ def excludeJdk25 = startParameter.projectProperties.containsKey('excludeJdk25') 
         System.getenv('JITPACK') != null
 
 // server-api -- reusable, platform-neutral server identity and logging SPI.
+include 'server-api'
 // Non-rtp-exclusive, platform-neutral API modules are grouped under the
 // api/ folder to declutter the repo root. The Gradle project paths and
 // Maven coordinates are intentionally KEPT FLAT (':server-api', ':yaml-api',
@@ -127,51 +128,90 @@ def excludeJdk25 = startParameter.projectProperties.containsKey('excludeJdk25') 
 // commands-api -- platform-neutral command-tree framework (commands-api-ADR-001).
 // In-tree module: consumed by rtp-api/rtp-core and every platform adapter via
 // project(':commands-api'). Pure Java (Brigadier as compileOnly), no Loom.
+include 'commands-api'
 // bit-api -- generic built-in test contract for plugin-agnostic BIT consumers.
+include 'bit-api'
 // yaml-api -- in-house zero-dependency YAML substrate (ADR-025), extracted from
 // rtp-core so rtp-api can host the configurable selection model without a core
 // dependency. Pure Java, no platform/Loom dependency.
+include 'yaml-api'
 // units-api -- dependency-free general-purpose temporal, spatial, and data-size
 // parsers, extracted from rtp-core and re-exported by rtp-api.
+include 'units-api'
 // effects-api -- platform-neutral effects SPI + Bukkit runtime
 // (effects-api-ADR-003). Pure Java, no Loom: Minecraft-typed effect code lives
 // in the Fabric / NeoForge platform carriers. Consumed via project(':effects-api').
+include 'effects-api'
 // effects-api-fabric-unobf -- nested Mojmap-unobf carrier for the deobf MC 26.x
 // runtime (effects-api-ADR-006, rtp-fabric-ADR-009). Requires JDK 25 + Loom
 // 1.15; excluded on JDK-21-only hosts alongside the other JDK-25 modules.
+if (!excludeJdk25) {
+    include 'effects-api:effects-api-fabric-unobf'
+}
 // maps-api — runtime cartography SPI (ADR-046, maps-api-ADR-001).
 // Pure Java SPI: no Bukkit / Fabric / Loom dependency. Concrete bindings
 // (BukkitMapBinding, FoliaMapBinding, FabricMapBinding) land in Stage 2/3
 // inside the platform adapters; this module ships only the platform-neutral
 // SPI + NoopMapBinding + HeatmapRenderer + ChartModel hierarchy.
+include 'maps-api'
 // metrics-api — platform-portable metrics SPI (metrics-api-ADR-001,
 // extracted 2026-05-17). Pure Java SPI: no Bukkit / Fabric / Loom dependency.
 // Designed for monorepo reuse — sibling plugins can consume without rtp-core
 // (per metrics-api-ADR-001). Concrete bindings (PaperMetricsBinding,
 // BukkitTpsSampler, FoliaMetricsBinding + FoliaRegionTpsSampler,
 // FabricMetricsBinding) stay in their respective platform adapters.
+include 'metrics-api'
 // bstats-api -- dependency-free bStats v2 client (bstats-api-ADR-001). Pure
 // Java, no RTP-module or platform dependency, so sibling plugins (backend or
 // proxy) can reuse it; hosts supply scheduler + logger through its SPI.
+include 'bstats-api'
 // anvil-api -- platform-neutral vanilla Anvil region-file decode / NBT
 // pre-filter (ADR-016). No RTP-module or platform dependency, so it groups
 // under api/ with the other non-rtp-exclusive modules. Renamed from the
 // former ':rtp-anvil' coordinate; on-disk at api/anvil-api.
+include 'anvil-api'
 // tags-api -- platform-neutral Minecraft block-tag JSON resolver (ADR-017).
 // No RTP-module or platform dependency (hand-rolled JSON reader, no third-party
 // JSON lib), so it groups under api/ with the other non-rtp-exclusive modules.
 // Renamed from the former ':rtp-tags' coordinate; on-disk at api/tags-api.
+include 'tags-api'
 // predict-api -- zero-dependency stochastic estimation and control toolkit (ADR-115).
+include 'predict-api'
 // config-bit-api -- declarative YAML directive and constraint PBIT library (ADR-064, ADR-121).
+include 'config-bit-api'
 // bytecode-api -- zero-classloading JVM .class constant-pool, config-key, and causal-graph bytecode scanner (leafconfig-ADR-001, leaffuzz-ADR-001, ADR-125).
+include 'bytecode-api'
 // menu-api -- cross-platform declarative menu, session, token, and prompt SPI (ADR-035, ADR-044, ADR-048).
+include 'menu-api'
 // database-api -- zero-dependency SQL connection pooling, dialect abstraction, and Redis RESP2 client (leafrtp-ADR-079).
+include 'database-api'
 // schematics-api -- platform-neutral Sponge (.schem) and Litematica (.litematic) decoder, cache, and 3D placement planner (leafrtp-ADR-041).
+include 'schematics-api'
 
 // Relocate the grouped api/ modules on disk while keeping their flat Gradle
 // project paths (see the comment block above the include lines). The nested
 // unobf carrier inherits no projectDir from its parent in Gradle, so it is
 // overridden explicitly.
+project(':commands-api').projectDir   = file('api/commands-api')
+project(':server-api').projectDir     = file('api/server-api')
+project(':bit-api').projectDir        = file('api/bit-api')
+project(':effects-api').projectDir    = file('api/effects-api')
+if (!excludeJdk25) {
+    project(':effects-api:effects-api-fabric-unobf').projectDir = file('api/effects-api/effects-api-fabric-unobf')
+}
+project(':yaml-api').projectDir       = file('api/yaml-api')
+project(':units-api').projectDir      = file('api/units-api')
+project(':maps-api').projectDir       = file('api/maps-api')
+project(':metrics-api').projectDir    = file('api/metrics-api')
+project(':bstats-api').projectDir     = file('api/bstats-api')
+project(':anvil-api').projectDir      = file('api/anvil-api')
+project(':tags-api').projectDir       = file('api/tags-api')
+project(':predict-api').projectDir    = file('api/predict-api')
+project(':config-bit-api').projectDir = file('api/config-bit-api')
+project(':bytecode-api').projectDir   = file('api/bytecode-api')
+project(':menu-api').projectDir       = file('api/menu-api')
+project(':database-api').projectDir   = file('api/database-api')
+project(':schematics-api').projectDir = file('api/schematics-api')
 
 
 // Shared server-side and proxy platform modules are grouped under the
@@ -355,24 +395,4 @@ if (!excludeJdk25) {
 }
 if (!excludeNeoforge && !excludeJdk25) {
     include 'resource:LeafTreeGen:treegen-neoforge'
-}
-
-
-
-
-
-
-
-
-
-
-include 'resource:LeafShard:leafshard-common'
-include 'resource:LeafShard:leafshard-paper'
-include 'resource:LeafShard:leafshard-velocity'
-include 'resource:LeafShard:leafshard-plugin'
-if (!excludeJdk25) {
-    include 'resource:LeafShard:leafshard-fabric'
-}
-if (!excludeNeoforge && !excludeJdk25) {
-    include 'resource:LeafShard:leafshard-neoforge'
 }
