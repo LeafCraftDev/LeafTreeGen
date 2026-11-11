@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - 2026-11-05
+## [1.0.0] - Unreleased
 
 ### Added
 
@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Spawn-by-chunk slicing, storage-agnostic saved-chunk RMW & stateless halo generation (`SegmentedTreeModel`, `TreeModel`, `ProceduralGenerator`, `TreeGenEventController`, `RegionFileResolver`):**
   - `sliceForChunk`, `placeChunkSlice`, `partitionByChunk`, `touchedChunks`, and `intersectsChunk` clip any tree model to a single `[0..15, 0..15]` chunk slice while preserving wood-first, leaf-distance-ascending placement order.
   - `ProceduralGenerator.sampleChunkHalo` and `generateChunkHalo` let world generators evaluate and stamp partial tree slices per chunk in any generation order without touching neighbouring chunks.
-  - `TreeGenEventController#onChunkLoad` evaluates procedural trees originating in `(chunkX, chunkZ)` immediately on first load (no `40`-tick unload race) and routes overhanging canopy slices via `placeOrDeferChunkBlocks`: writing directly to live chunks when loaded, retroactively patching already-saved chunks on disk through `:anvil-api`'s storage-agnostic `RegionFileResolver.patchChunkBlocks` (`RegionFileReader#patchChunkBlocks` across `.lca` and `.mca`), or deferring ungenerated neighbor chunks in `pendingChunkSlices` until `onChunkLoad` (`S-005`).
+  - `TreeGenEventController#onChunkLoad` evaluates procedural trees originating in `(chunkX, chunkZ)` immediately on first load (no `40`-tick unload race), completes both incoming and outgoing overhangs against pre-existing adjacent chunks across chunk and `.lca`/`.mca` region boundaries (`completeAdjacentPreexistingChunkTrees`), and routes overhanging canopy slices via `placeOrDeferChunkBlocks`: writing directly to live chunks when loaded, retroactively patching already-saved chunks on disk through `:anvil-api`'s storage-agnostic `RegionFileResolver.patchChunkBlocks` (`RegionFileReader#patchChunkBlocks` across `.lca` and `.mca`), or deferring ungenerated neighbor chunks in `pendingChunkSlices` until `onChunkLoad` (`S-005`).
 - **Expanded `/leaftree` `CommandsAPI` command tree, variant pinning & interactive chat chips (`LeafTreeGenCommand`, `LeafTreeGenCommandTest`):**
   - `/leaftree generate species=<id> [world=<name>] [x=<~|n>] [y=<~|n>] [z=<~|n>]` supports explicit world and relative (`~` / `~n`) or absolute coordinates in addition to cursor ray-trace targeting.
   - `/leaftree give species=<id> [player=<name>] [amount=<1..64>] [variant=<key>]` supports explicit variant pinning and dynamic tab completion across baked `.nbt` structure templates, procedural tiers, group-species child definitions (`availableVariantsFor`), and online players across Paper, Folia, Fabric, and NeoForge.
