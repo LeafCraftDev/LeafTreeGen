@@ -4,9 +4,8 @@ Follows docs/dev/RULES.md Rule D-006 (first-person plain voice, 3-Zone hierarchy
 ASCII punctuation only, concrete numbers and honest caveats).
   BuiltByBit Card Title: "LeafTreeGen - Procedural Custom Trees & Native Worldgen Datapacks"
   BuiltByBit Card Thumbnail: docs/assets/leaftreegen-card-thumbnail.png
-  BuiltByBit Carousel Slides: docs/assets/leaftreegen-card-thumbnail.png, docs/assets/leaftreegen-benchmark-comparison.png, docs/assets/leaftreegen-architecture-workflow.png, docs/images/cherry-grove-giant.png, docs/images/dark-forest-canopy.png
-  Paid BuiltByBit title:  "LeafTreeGen-Pro"  tagline: "Procedural custom biome trees baked into vanilla worldgen datapacks, staged sapling growth & custom saplings for Paper, Folia, Fabric & NeoForge"
-  Free title:             "LeafTreeGen"      tagline: "Procedural custom biome trees baked into vanilla worldgen datapacks, staged sapling growth & custom saplings for Paper, Folia, Fabric & NeoForge"
+  BuiltByBit Carousel Slides: docs/assets/leaftreegen-action-showcase.webp, docs/assets/leaftreegen-card-thumbnail.png, docs/assets/leaftreegen-benchmark-comparison.png, docs/assets/leaftreegen-architecture-workflow.png, docs/images/cherry-grove-giant.png, docs/images/dark-forest-canopy.png
+  Title: "LeafTreeGen"  tagline: "Procedural custom biome trees baked into vanilla worldgen datapacks, staged sapling growth & custom saplings for Paper, Folia, Fabric & NeoForge"
 -->
 
 <div align="center">
@@ -29,20 +28,11 @@ ASCII punctuation only, concrete numbers and honest caveats).
 
 I originally wrote the procedural geometry engine for my own custom worlds, and rebuilt it in pure Java on the shared [`DailyStruggle/RTP`](https://github.com/DailyStruggle/RTP) common API (`server-api`, `commands-api`, `yaml-api`, `predict-api`, and `anvil-api`) so one jar runs across Paper, Folia, Fabric, and NeoForge.
 
+<!-- not: bbb -->
 ![Cherry Grove Giant](../images/cherry-grove-giant.png)
 
 *A Cherry Grove Giant generated from procedural species parameters and placed through native jigsaw worldgen.*
-
-<!-- only: bbb-pro -->
-<!-- kind: promo -->
-This listing is how you pay for support. The code is the same as the [free download](https://modrinth.com/plugin/leaf-treegen) and all of it is MIT licensed. Paying doesn't unlock anything in the plugin; details are in [What paying gets you](#what-paying-gets-you) below.
-<!-- /kind -->
-<!-- /only -->
-<!-- only: bbb-lite -->
-<!-- kind: promo -->
-There is also a paid LeafTreeGen-Pro listing on BuiltByBit. It is the same code, and nothing in the plugin is locked. Paying gets you priority support and a patch release when a bug you report needs one.
-<!-- /kind -->
-<!-- /only -->
+<!-- /not -->
 
 ### The short version
 
@@ -112,7 +102,9 @@ Placing `~391,500` custom tree blocks across `192` forested chunks (`172,797` bl
   - Custom tree canopies (`28` species, multi-block log/leaf/decorator palettes) inflate vanilla `.mca` region files. Pairing `LeafTreeGen` with `.lca` (`zstd-level: 0` Mode A) shrinks generated forest region files by **`63.8% to 74.3%` (`2.8x to 3.9x` smaller: `28.6-29.1 MB -> 7.4-8.0 MB` across `32` regions on Paper/Folia; `24.5-25.0 MB -> 8.7-8.9 MB` on Fabric/NeoForge)**.
   - During CPU-bound generation (Stages 1 & 2), `.lca` matches `.mca` within `1% to 6%` (`7.41 s` vs `7.75 s` `DATAPACK` and `7.44 s` vs `7.78 s` `PROCEDURAL` on Paper Stage 1; `13.6%` faster on Fabric `DATAPACK` Stage 2 at `94.73 s` vs `109.58 s`). In Stage 3 (`192`-chunk reload/unload churn), `.lca` is **`+12% to +20%` faster** than `.mca` on Fabric and NeoForge `PROCEDURAL` (`1.20 s` / `160.0 ch/s` vs `1.36 s` / `141.2 ch/s` on NeoForge; `1.29 s` / `148.8 ch/s` vs `1.62 s` / `118.5 ch/s` on Fabric), while on Paper's page-cached Moonrise queue `.mca` is `0.98-1.18 s` vs `.lca` `1.22-1.26 s` (`~1 ms/chunk` difference). Because the [`.lca` spec (`ICD.md`)](../../../../api/anvil-api/docs/ICD.md) and [`anvil-api` Java codec](../../../../api/anvil-api/README.md) are free and MIT-licensed, `.lca` worlds can be inspected (`AnvilRegionInspectorCli`), pre-filtered by `LeafRTP`, or converted back to `.mca` offline without vendor lock-in.
 
+<!-- not: bbb -->
 ![LeafTreeGen 6-biome vertical canopy elevation profile, 4-layer Dark Forest ecological stratification, and verification summary](../assets/leaftreegen-benchmark-comparison.png)
+<!-- /not -->
 
 **24-Cell Clean-Boot Matrix Summary (`seed=8675309`, `64`-Chunk Gen + `128`-Chunk Rolling Gen + `192`-Chunk Reload Churn, `.mca` vs `.lca`):**
 
@@ -131,9 +123,11 @@ Placing `~391,500` custom tree blocks across `192` forested chunks (`172,797` bl
 | **Fabric `26.1.2` - `DATAPACK`** | `34.1 s` / `35.1 s` | `34.63 s` / `35.93 s` (`1.9 ch/s`) | `17,055` / `16,393 ms` win; `0 ms` (`0` blocks) | `109.58 s` / **`94.73 s`** (`+13.6%` `.lca`) | `1.40 s` / `2.20 s` | `24.96 MB` vs **`8.84 MB` (`-64.6%`)** |
 | **Fabric `26.1.2` - `PROCEDURAL`** | **`12.8 s` / `13.5 s`** | **`15.63 s` / `15.50 s`** (`4.1 ch/s`, **`2.2-2.3x` vs DP**) | **`6,346` / `6,062 ms` win**; `275-374 ms` (`169,176` blocks) | **`31.47 s` / `31.70 s`** (**`3.0-3.5x` vs DP**) | `1.62 s` / **`1.29 s` (`148.8 ch/s`, `+20%`)** | `24.46 MB` vs **`8.85 MB` (`-63.8%`)** |
 
+<!-- not: bbb -->
 ![Dark forest canopy](../images/dark-forest-canopy.png)
 
 *Dense overlapping dark-forest canopies and giant mushrooms generated via jigsaw template pools.*
+<!-- /not -->
 
 ---
 
@@ -148,7 +142,9 @@ All procedural variant baking, jigsaw pool wiring, staged sapling reveals, and b
 
 ### Dual-track worldgen pipeline and procedural growth schematics
 
+<!-- not: bbb -->
 ![LeafTreeGen dual-track worldgen pipeline and procedural growth schematics](../assets/leaftreegen-architecture-workflow.png)
+<!-- /not -->
 
 Each species definition (`species/*.json` and `config.yml`) feeds a dual-track worldgen and survival sapling pipeline:
 - **Track A - Pre-world native `.nbt` datapack baker (`DATAPACK` mode):** `PaperBootstrap` and `DatapackGenerator` run before the server scans world `datapacks/` folders, baking `829` gzipped `.nbt` variants (`SHA-256` cached via `.treegen-fingerprint`) and wiring `template_pool`, `structure_set`, and `replace-vanilla` overrides so new chunks populate off-thread with zero runtime listeners.
@@ -171,23 +167,6 @@ Every build runs `89` automated JUnit 5, `anvil-api` NBT, and stateful fuzz test
 Most custom tree plugins hook into `ChunkPopulateEvent` or `StructureGrowEvent` and place thousands of blocks on the main server thread while players explore, causing lag spikes on survival servers and breaking on Folia. Pre-painted static maps avoid runtime listeners, but lose normal vanilla worldgen, structures, and new biomes.
 
 I built `{{name}}` so server admins can define tree geometry in a small JSON file, bake `.nbt` variants in pure Java at startup, and let vanilla jigsaw worldgen place them off-thread as chunks generate - while using those same procedural models for staged survival sapling growth, leaf-drop tree farming, and `/leaftree generate` builder tools across Paper, Folia, Fabric, and NeoForge.
-
-<!-- only: bbb-pro -->
-<!-- kind: promo -->
----
-
-## What paying gets you
-
-Same code, config, and commands as the free download, under the same MIT license. Nothing in the plugin is locked:
-
-| This listing | Free download |
-|---|---|
-| Priority on my support queue | Community support, best effort |
-| A patch release when a bug you report needs one | Updates when I choose to publish them |
-
-Switching between the free download and this one is a jar swap.
-<!-- /kind -->
-<!-- /only -->
 
 ---
 
@@ -280,6 +259,5 @@ I handle support directly through Discord and GitHub:
 - [**Changelog**](../../CHANGELOG.md)
 - [**LeafAnvil & Open `.lca` Codec (`anvil-api`, MIT)**](../../../LeafAnvil/docs/publishing/FRONT_PAGE.md): live `.lca` world storage plugin/mod (`64% to 74%` smaller custom-tree region files) backed by the free MIT [`.lca` specification](../../../../api/anvil-api/docs/ICD.md) and [`anvil-api` Java codec](../../../../api/anvil-api/README.md)
 - [**LeafRTP**](../../../LeafRTP/docs/publishing/FRONT_PAGE.md): zero-wait random teleportation (`/rtp` & `/wild`) with `.mca`, `.linear`, and `.lca` region pre-filtering
-<!-- only: bbb-pro -->
-- [**Free download**](https://modrinth.com/plugin/leaf-treegen)
-<!-- /only -->
+- [**LeafSleuth**](../../../LeafSleuth/docs/publishing/FRONT_PAGE.md): catches walk-away lag-machine builders (`CoreProtect`), item dupes, stash rings, and VPN ban-evader alts while cutting hotspot load by `-68.6%`
+- [**LeafSleep (`OnePlayerSleep`)**](../../../LeafSleep/docs/publishing/FRONT_PAGE.md): population-scaled sleep voting, anti-troll `[Cancel]`, and cross-server dawn sync
