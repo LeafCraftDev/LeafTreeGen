@@ -19,7 +19,9 @@
 # 'datapack' controls the generated pack:
 #   name        : folder name written under <world>/datapacks. Default: leaf-treegen-generated.
 #   description : pack.mcmeta description.
-#   generate    : set false to disable datapack generation entirely.
+#   generate    : whether to write the datapack (including vanilla-tree suppression in
+#                 PROCEDURAL mode when replace-vanilla: true). Default: true. Set false
+#                 to disable datapack generation entirely and remove any generated pack.
 #
 # Per-species keys:
 #   display-name : friendly name (sapling item + messages). Default: id.
@@ -72,6 +74,8 @@ water-growth-trees:
 datapack:
   name: leaf-treegen-generated
   description: "LeafTreeGen generated worldgen (from config.yml)."
+  # Set to false to disable datapack generation (including PROCEDURAL replace-vanilla suppression).
+  generate: true
 
 # Placement overrides and biome mapping.
 # Species are loaded from the 'species/' directory as JSON.

@@ -1,5 +1,5 @@
 name: LeafTreeGen
-version: 1.1.0
+version: 1.0.0
 main: net.leaf.treegen.paper.PaperLeafTreeGenPlugin
 # The bootstrapper runs before worlds and their datapacks are loaded, so the
 # generated worldgen datapacks are written to disk before datapack discovery

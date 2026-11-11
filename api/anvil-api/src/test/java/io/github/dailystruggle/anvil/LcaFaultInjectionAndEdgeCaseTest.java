@@ -732,4 +732,81 @@ class LcaFaultInjectionAndEdgeCaseTest {
             assertFalse(r2.isChannelOpen(), "Unpromoted region (2,0) must be evicted before promoted region (1,0)");
         }
     }
+
+    @Test
+    @DisplayName("Concurrent Chunky-style multi-worker reads and dictionary growth never publish stale cachedParsedDict (CBIT T7)")
+    void concurrentChunkyStyleWriteAndReadDoesNotPublishStaleSlabLocalGlobalStateIdDict(@TempDir Path tempDir) throws Exception {
+        Path regionFile = tempDir.resolve("r.0.5.lca");
+        try (LcaRegionWriter.LcaLiveArchive archive = LcaRegionWriter.openOrCreateLiveArchive(
+                regionFile, 0, 5, -4, 24, 5023, 1, LcaRegionReader.STORAGE_KIND_REGION_VOXEL)) {
+            archive.saveChunkCoW(0, 0, buildTestChunk(0, 160, "minecraft:stone", 4));
+
+            java.util.concurrent.atomic.AtomicBoolean running = new java.util.concurrent.atomic.AtomicBoolean(true);
+            java.util.concurrent.atomic.AtomicReference<Throwable> readerError =
+                    new java.util.concurrent.atomic.AtomicReference<>();
+            Thread[] readers = new Thread[4];
+            for (int t = 0; t < readers.length; t++) {
+                readers[t] = new Thread(() -> {
+                    while (running.get() && readerError.get() == null) {
+                        try {
+                            byte[] nbt = archive.readChunkNbtBytes(0, 0);
+                            if (nbt == null || nbt.length == 0) {
+                                readerError.compareAndSet(null, new AssertionError("Null NBT on (0,0)"));
+                            }
+                        } catch (Throwable ex) {
+                            readerError.compareAndSet(null, ex);
+                        }
+                    }
+                }, "lca-reader-" + t);
+                readers[t].setDaemon(true);
+                readers[t].start();
+            }
+
+            try {
+                int stateCounter = 0;
+                for (int round = 0; round < 60 && readerError.get() == null; round++) {
+                    int rx = 1 + (round % 30);
+                    int rz = 1 + ((round / 30) % 30);
+                    LinkedHashMap<String, Object> chunk = buildTestChunk(rx, 160 + rz, "minecraft:stone", 2);
+                    @SuppressWarnings("unchecked")
+                    Nbt.NbtList sections = (Nbt.NbtList) chunk.get("sections");
+                    @SuppressWarnings("unchecked")
+                    LinkedHashMap<String, Object> sec0 = (LinkedHashMap<String, Object>) sections.items.get(0);
+                    @SuppressWarnings("unchecked")
+                    LinkedHashMap<String, Object> bs = (LinkedHashMap<String, Object>) sec0.get("block_states");
+                    @SuppressWarnings("unchecked")
+                    Nbt.NbtList pal = (Nbt.NbtList) bs.get("palette");
+                    for (int k = 0; k < 4; k++) {
+                        int id = ++stateCounter;
+                        LinkedHashMap<String, Object> entry = new LinkedHashMap<>();
+                        entry.put("Name", "minecraft:stone_brick_slab[type=bottom,waterlogged=true,ruin_id=" + id + "]");
+                        pal.items.add(entry);
+                    }
+                    int[] yzx = new int[4096];
+                    for (int i = 0; i < 4096; i++) {
+                        yzx[i] = i % pal.items.size();
+                    }
+                    bs.put("data", LcaSectionCodec.packBlockLongs(yzx, pal.items.size()));
+
+                    byte[] preEncoded = archive.encodeChunkPayloadForSlab(rx, rz, chunk);
+                    archive.commitPreEncodedChunkCoW(rx, rz, preEncoded);
+                    // Give concurrent readers a micro-window to finish publishing any stale snapshot before reading (rx, rz)
+                    Thread.yield();
+                    byte[] decoded = archive.readChunkNbtBytes(rx, rz);
+                    assertNotNull(decoded);
+                    assertTrue(decoded.length > 64);
+                }
+            } finally {
+                running.set(false);
+                for (Thread r : readers) {
+                    r.join(5000);
+                }
+            }
+            if (readerError.get() != null) {
+                fail("Concurrent reader failed", readerError.get());
+            }
+            byte[] finalRead = archive.readChunkNbtBytes(22, 2);
+            assertNotNull(finalRead);
+        }
+    }
 }

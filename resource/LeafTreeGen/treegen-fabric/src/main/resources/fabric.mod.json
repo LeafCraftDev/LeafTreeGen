@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "leaf_treegen",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "name": "LeafTreeGen",
   "description": "Procedural tree generation for Minecraft.",
   "authors": ["leaf"],

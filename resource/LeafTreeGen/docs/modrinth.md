@@ -101,12 +101,14 @@ I've reworked it so you can optionally run it once for datapack (`.nbt`-based) g
 
 | Command | Description |
 |---|---|
-| `/leaftree generate species=<id>` | Place a tree at your cursor (admin test) |
-| `/leaftree give species=<id> [player] [amount]` | Hand out custom saplings |
+| `/leaftree generate species=<id> [world=<name>] [x=<~\|n>] [y=<~\|n>] [z=<~\|n>]` | Place a tree at your cursor or target coordinates (admin test) |
+| `/leaftree give species=<id> [player=<name>] [amount=<1..64>] [variant=<key>]` | Hand out custom saplings (random or pinned to a variant) |
 | `/leaftree list [species=<id>]` | List registered species or variants |
 | `/leaftree reload` | Apply config changes and regenerate the datapack |
+| `/leaftree debug` | Show active generation mode, loaded worlds, and per-species biome status |
+| `/leaftree stats [reset=<true\|false>]` | Show or reset `TreeBlockBatcher` tick-budget and chunk-window telemetry |
 
-Requires the `leaftreegen.admin` permission node.
+Requires the `leaftreegen.admin` permission node (`leaftreegen.sapling` allows planting custom saplings in survival/adventure).
 
 ---
 
@@ -146,7 +148,7 @@ placement:
 
 ## Requirements
 
-- Java 25+
+- Java 21+ (Java 25 on Minecraft 26.x)
 - One of:
   - Paper or Folia 1.21+
   - Fabric 26.1+ (Fabric Loader 0.18.4+, Fabric API)

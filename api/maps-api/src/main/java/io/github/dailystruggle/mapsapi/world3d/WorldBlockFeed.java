@@ -4,8 +4,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Platform-neutral SPI for delivering client-side 2D/3D block drawing code and packet-budgeted
@@ -44,6 +47,77 @@ public interface WorldBlockFeed {
     int DEFAULT_MAX_PACKET_BYTES = 30_000;
 
     /**
+     * Compact procedural $16 \times 16$ block texture recipe descriptor delivered inside
+     * {@link ClientDrawingKernel} so {@code window.LeafMapClientKernel} can synthesize crisp
+     * pixel-art top and side textures, cutout alpha, and biome grass/foliage LUT tinting on the
+     * client without shipping external PNG atlases.
+     *
+     * @param baseRgb24      primary 24-bit RGB color ({@code 0x000000..0xFFFFFF})
+     * @param secondaryRgb24 secondary/grain/mortar 24-bit RGB color ({@code 0x000000..0xFFFFFF})
+     * @param topSideDelta   signed brightness delta between top and side faces (`-64..64`)
+     * @param patternId      procedural synthesis kernel selector (`0=NOISE_STONE`, `1=DEEPSLATE_GRAIN`,
+     *                       `2=BRICK_MORTAR`, `3=PLANKS`, `4=LOG_BARK_RINGS`, `5=GRASS_TOP`,
+     *                       `6=LEAVES_CUTOUT`, `7=WATER_CAUSTIC`, `8=GLASS_FRAME`, `9=ORE_FLECKS`,
+     *                       `10=CROSS_FLORA`, `11=CONTAINER_TOP`, `12=REDSTONE_LAMP`)
+     * @param alphaMode      alpha mode (`0=OPAQUE`, `1=CUTOUT`, `2=TRANSLUCENT`, `3=EMISSIVE`)
+     * @param biomeTintMode  biome LUT tint selector (`0=NONE`, `1=GRASS_LUT`, `2=FOLIAGE_LUT`, `3=WATER_LUT`)
+     */
+    record BlockTextureRecipe(
+            int baseRgb24,
+            int secondaryRgb24,
+            int topSideDelta,
+            int patternId,
+            int alphaMode,
+            int biomeTintMode
+    ) {
+        public BlockTextureRecipe {
+            baseRgb24 = baseRgb24 & 0xFFFFFF;
+            secondaryRgb24 = secondaryRgb24 & 0xFFFFFF;
+            topSideDelta = Math.max(-64, Math.min(64, topSideDelta));
+            if (patternId < 0 || patternId > 15) {
+                throw new IllegalArgumentException("patternId must be in [0, 15], got: " + patternId);
+            }
+            if (alphaMode < 0 || alphaMode > 3) {
+                throw new IllegalArgumentException("alphaMode must be in [0, 3], got: " + alphaMode);
+            }
+            if (biomeTintMode < 0 || biomeTintMode > 3) {
+                throw new IllegalArgumentException("biomeTintMode must be in [0, 3], got: " + biomeTintMode);
+            }
+        }
+    }
+
+    /**
+     * Tier 1 chunk-resolution ($16 \times 16$-block cell) biome, elevation, and water horizon sample
+     * streamed between the Tier 0 rough biome layout backdrop and Tier 2 $1:1$ {@code .lca} block
+     * sections.
+     *
+     * @param chunkX         chunk X coordinate
+     * @param chunkZ         chunk Z coordinate
+     * @param biomeId        compact biome palette ID (`0..255`)
+     * @param medianSurfaceY median solid surface Y coordinate in this chunk (`-64..319`)
+     * @param waterDepth     median water column depth (`0..64`, `0` when dry)
+     * @param topBlockId     dominant surface block state ID (e.g. {@code "minecraft:grass_block"})
+     */
+    record ChunkBiomeHorizonCell(
+            int chunkX,
+            int chunkZ,
+            int biomeId,
+            int medianSurfaceY,
+            int waterDepth,
+            String topBlockId
+    ) {
+        public ChunkBiomeHorizonCell {
+            Objects.requireNonNull(topBlockId, "topBlockId");
+            biomeId = biomeId & 0xFF;
+            medianSurfaceY = Math.max(-64, Math.min(319, medianSurfaceY));
+            waterDepth = Math.max(0, Math.min(255, waterDepth));
+            if (topBlockId.isBlank()) {
+                throw new IllegalArgumentException("topBlockId must not be blank");
+            }
+        }
+    }
+
+    /**
      * Self-contained client-side 2D/3D voxel &amp; sub-chunk drawing kernel delivered by {@code LeafMap}
      * so host panels (such as {@code LeafConfig}) can decode and draw {@code .lca} sub-chunks,
      * multi-span overhangs, subterranean cutaways, and vanilla `[1.0, 0.8, 0.6, 0.5]` + AO shading
@@ -53,22 +127,35 @@ public interface WorldBlockFeed {
      * @param version               kernel schema version (e.g. {@code "lca-v1.0"})
      * @param clientDrawingModuleJs self-contained JavaScript module exposing {@code window.LeafMapClientKernel}
      * @param blockPaletteColors    shared region/world block-state ID to 24-bit RGB color dictionary
+     * @param blockPaletteRecipes   compact per-block procedural $16 \times 16$ texture recipe table
      */
     record ClientDrawingKernel(
             String providerId,
             String version,
             String clientDrawingModuleJs,
-            Map<String, Integer> blockPaletteColors
+            Map<String, Integer> blockPaletteColors,
+            Map<String, BlockTextureRecipe> blockPaletteRecipes
     ) {
+        public ClientDrawingKernel(
+                String providerId,
+                String version,
+                String clientDrawingModuleJs,
+                Map<String, Integer> blockPaletteColors
+        ) {
+            this(providerId, version, clientDrawingModuleJs, blockPaletteColors, Map.of());
+        }
+
         public ClientDrawingKernel {
             Objects.requireNonNull(providerId, "providerId");
             Objects.requireNonNull(version, "version");
             Objects.requireNonNull(clientDrawingModuleJs, "clientDrawingModuleJs");
             Objects.requireNonNull(blockPaletteColors, "blockPaletteColors");
+            Objects.requireNonNull(blockPaletteRecipes, "blockPaletteRecipes");
             if (providerId.isBlank()) {
                 throw new IllegalArgumentException("providerId must not be blank");
             }
             blockPaletteColors = Collections.unmodifiableMap(new LinkedHashMap<>(blockPaletteColors));
+            blockPaletteRecipes = Collections.unmodifiableMap(new LinkedHashMap<>(blockPaletteRecipes));
         }
     }
 
@@ -216,6 +303,7 @@ public interface WorldBlockFeed {
      * @param maxSectionY              maximum included vertical section index (`-4..19`)
      * @param surfaceHorizonHeader     compact `DualLayerSpiralHilbertCurve` surface + overhang bitplane slice
      * @param subChunks                included $16^3$ vertical sub-chunk frames
+     * @param chunkBiomeHorizon        Tier 1 chunk-resolution ($16 \times 16$) biome + elevation + water horizon cells
      * @param fitsInSinglePacket       {@code true} if {@code wireByteCount <= maxPacketBytes}
      * @param wireByteCount            total wire bytes in this packet frame
      * @param localFallbackArchivePath path to the local zero-parse `.lca` / `.dlsh` archive for instant local loading
@@ -233,22 +321,62 @@ public interface WorldBlockFeed {
             int maxSectionY,
             byte[] surfaceHorizonHeader,
             List<SubChunkSectionFrame> subChunks,
+            List<ChunkBiomeHorizonCell> chunkBiomeHorizon,
             boolean fitsInSinglePacket,
             int wireByteCount,
             String localFallbackArchivePath,
             double coldChunkLoadMicros,
             double compressionRatioVsBlueMap
     ) {
+        public PacketDataBatch(
+                String world,
+                int packetIndex,
+                int totalPackets,
+                int lodLevel,
+                int centerChunkX,
+                int centerChunkZ,
+                int minSectionY,
+                int maxSectionY,
+                byte[] surfaceHorizonHeader,
+                List<SubChunkSectionFrame> subChunks,
+                boolean fitsInSinglePacket,
+                int wireByteCount,
+                String localFallbackArchivePath,
+                double coldChunkLoadMicros,
+                double compressionRatioVsBlueMap
+        ) {
+            this(
+                    world,
+                    packetIndex,
+                    totalPackets,
+                    lodLevel,
+                    centerChunkX,
+                    centerChunkZ,
+                    minSectionY,
+                    maxSectionY,
+                    surfaceHorizonHeader,
+                    subChunks,
+                    List.of(),
+                    fitsInSinglePacket,
+                    wireByteCount,
+                    localFallbackArchivePath,
+                    coldChunkLoadMicros,
+                    compressionRatioVsBlueMap
+            );
+        }
+
         public PacketDataBatch {
             Objects.requireNonNull(world, "world");
             Objects.requireNonNull(surfaceHorizonHeader, "surfaceHorizonHeader");
             Objects.requireNonNull(subChunks, "subChunks");
+            Objects.requireNonNull(chunkBiomeHorizon, "chunkBiomeHorizon");
             Objects.requireNonNull(localFallbackArchivePath, "localFallbackArchivePath");
             if (packetIndex < 0 || totalPackets < 1 || packetIndex >= totalPackets) {
                 throw new IllegalArgumentException("Invalid packetIndex/totalPackets: " + packetIndex + "/" + totalPackets);
             }
             surfaceHorizonHeader = surfaceHorizonHeader.clone();
             subChunks = List.copyOf(subChunks);
+            chunkBiomeHorizon = List.copyOf(chunkBiomeHorizon);
         }
 
         @Override
@@ -274,6 +402,7 @@ public interface WorldBlockFeed {
                     && world.equals(that.world)
                     && Arrays.equals(surfaceHorizonHeader, that.surfaceHorizonHeader)
                     && subChunks.equals(that.subChunks)
+                    && chunkBiomeHorizon.equals(that.chunkBiomeHorizon)
                     && localFallbackArchivePath.equals(that.localFallbackArchivePath);
         }
 
@@ -289,6 +418,7 @@ public interface WorldBlockFeed {
                     minSectionY,
                     maxSectionY,
                     subChunks,
+                    chunkBiomeHorizon,
                     fitsInSinglePacket,
                     wireByteCount,
                     localFallbackArchivePath,
@@ -309,6 +439,7 @@ public interface WorldBlockFeed {
                     + ", maxSectionY=" + maxSectionY
                     + ", surfaceHorizonHeader=" + Arrays.toString(surfaceHorizonHeader)
                     + ", subChunks=" + subChunks
+                    + ", chunkBiomeHorizon=" + chunkBiomeHorizon
                     + ", fitsInSinglePacket=" + fitsInSinglePacket
                     + ", wireByteCount=" + wireByteCount
                     + ", localFallbackArchivePath=" + localFallbackArchivePath
@@ -363,6 +494,249 @@ public interface WorldBlockFeed {
                 throw new IllegalArgumentException("world must not be blank");
             }
         }
+
+        /**
+         * Creates a multi-server world descriptor whose {@link #world()} is prefixed with
+         * {@code serverId + ":"} when {@code serverId} is non-blank and not {@code "local"}.
+         */
+        public static WorldMapDescriptor ofServer(
+                String serverId,
+                String world,
+                String displayName,
+                String dimension,
+                int minY,
+                int maxY,
+                int spawnX,
+                int spawnY,
+                int spawnZ,
+                double borderCenterX,
+                double borderCenterZ,
+                double borderSize,
+                long timeOfDayTicks,
+                boolean storming,
+                int indexedRegions,
+                int indexedChunks
+        ) {
+            String srv = (serverId == null || serverId.isBlank()) ? "local" : serverId.trim();
+            String rawWorld = Objects.requireNonNull(world, "world").trim();
+            String composite = ("local".equalsIgnoreCase(srv) || rawWorld.contains(":"))
+                    ? rawWorld
+                    : srv + ":" + rawWorld;
+            return new WorldMapDescriptor(
+                    composite, displayName, dimension,
+                    minY, maxY, spawnX, spawnY, spawnZ,
+                    borderCenterX, borderCenterZ, borderSize,
+                    timeOfDayTicks, storming, indexedRegions, indexedChunks
+            );
+        }
+
+        /**
+         * Returns the upstream server identifier extracted from {@code serverId:world}, or
+         * {@code "local"} when unprefixed.
+         */
+        public String serverId() {
+            int colon = world.indexOf(':');
+            if (colon > 0 && colon + 1 < world.length()) {
+                String prefix = world.substring(0, colon).trim();
+                if (!"minecraft".equalsIgnoreCase(prefix)) {
+                    return prefix;
+                }
+            }
+            return "local";
+        }
+
+        /**
+         * Returns the bare world name without any {@code serverId:} prefix.
+         */
+        public String localWorldName() {
+            int colon = world.indexOf(':');
+            if (colon > 0 && colon + 1 < world.length()) {
+                String prefix = world.substring(0, colon).trim();
+                if (!"minecraft".equalsIgnoreCase(prefix)) {
+                    return world.substring(colon + 1).trim();
+                }
+            }
+            return world;
+        }
+
+        /**
+         * Returns the canonical {@code serverId:world} composite key (or bare {@code world} for
+         * {@code "local"}).
+         */
+        public String compositeWorldKey() {
+            String srv = serverId();
+            String bare = localWorldName();
+            return "local".equalsIgnoreCase(srv) ? bare : srv + ":" + bare;
+        }
+    }
+
+    /**
+     * Descriptor for an upstream server aggregated into a multi-server {@code LeafMap} hub
+     * ({@code leafmap-ADR-004}, {@code REQ-MAP-MULTI-001}).
+     *
+     * @param serverId        unique server identifier (e.g. {@code "survival-east"}, {@code "local"})
+     * @param displayName     human-readable server label
+     * @param worlds          worlds exposed by this server
+     * @param pooledChunks    number of chunks currently held in the bounded `.lca` LRU pool
+     * @param memoryBytesUsed L1 in-memory slab bytes attributed to this server
+     * @param diskBytesUsed   L2 disk `.lca` archive bytes attributed to this server
+     */
+    record ServerMapDescriptor(
+            String serverId,
+            String displayName,
+            List<String> worlds,
+            int pooledChunks,
+            long memoryBytesUsed,
+            long diskBytesUsed
+    ) {
+        public ServerMapDescriptor {
+            serverId = (serverId == null || serverId.isBlank()) ? "local" : serverId.trim();
+            displayName = (displayName == null || displayName.isBlank()) ? serverId : displayName.trim();
+            worlds = worlds == null ? List.of() : List.copyOf(worlds);
+        }
+    }
+
+    /**
+     * Component-level permission gates for a spatial overlay registered with {@code LeafMap}
+     * ({@code maps-api-ADR-003}, {@code leafconfig-ADR-003}, {@code ADR-115}).
+     *
+     * <p>Allows peer plugins (such as {@code LeafRTP} or {@code LeafSleuth}) to separate read
+     * visibility (e.g. drawing the RTP teleport donut or lag hotspot volume) from interactive
+     * mutation capabilities (resizing outer/inner radii, dragging center coordinates, or invoking
+     * remediation actions).
+     *
+     * @param viewPermission   permission required to view/render the overlay (empty = public)
+     * @param resizePermission permission required to drag outer/inner radius or vertex grips
+     * @param movePermission   permission required to drag the overlay center coordinate
+     * @param actionPermission permission required to invoke overlay remediation or config actions
+     */
+    record OverlayPermissionGates(
+            String viewPermission,
+            String resizePermission,
+            String movePermission,
+            String actionPermission
+    ) {
+        public OverlayPermissionGates {
+            viewPermission = viewPermission == null ? "" : viewPermission.trim();
+            resizePermission = resizePermission == null ? "" : resizePermission.trim();
+            movePermission = movePermission == null ? "" : movePermission.trim();
+            actionPermission = actionPermission == null ? "" : actionPermission.trim();
+        }
+
+        public static OverlayPermissionGates viewOnly(String viewPermission) {
+            return new OverlayPermissionGates(viewPermission, "op:false", "op:false", "op:false");
+        }
+
+        public static OverlayPermissionGates rtpRegionDefault() {
+            return new OverlayPermissionGates(
+                    "leafrtp.map.view",
+                    "leafrtp.map.resize",
+                    "leafrtp.map.move",
+                    "leafrtp.admin.config"
+            );
+        }
+
+        public static OverlayPermissionGates sleuthHotspotDefault() {
+            return new OverlayPermissionGates(
+                    "leafsleuth.map.view",
+                    "op:false",
+                    "op:false",
+                    "leafsleuth.admin.remediate"
+            );
+        }
+
+        public boolean canView(Predicate<String> permissionChecker) {
+            if (viewPermission.isEmpty()) {
+                return true;
+            }
+            if ("op:false".equalsIgnoreCase(viewPermission)) {
+                return false;
+            }
+            return permissionChecker == null || permissionChecker.test(viewPermission);
+        }
+
+        public boolean canResize(Predicate<String> permissionChecker) {
+            if ("op:false".equalsIgnoreCase(resizePermission) || resizePermission.isEmpty()) {
+                return false;
+            }
+            return permissionChecker != null && permissionChecker.test(resizePermission);
+        }
+
+        public boolean canMove(Predicate<String> permissionChecker) {
+            if ("op:false".equalsIgnoreCase(movePermission) || movePermission.isEmpty()) {
+                return false;
+            }
+            return permissionChecker != null && permissionChecker.test(movePermission);
+        }
+
+        public boolean canAct(Predicate<String> permissionChecker) {
+            if ("op:false".equalsIgnoreCase(actionPermission) || actionPermission.isEmpty()) {
+                return false;
+            }
+            return permissionChecker != null && permissionChecker.test(actionPermission);
+        }
+    }
+
+    /**
+     * Spatial overlay descriptor registered by a peer plugin (such as {@code LeafRTP} or
+     * {@code LeafSleuth}) directly with {@code LeafMap}, carrying geometry, config bindings,
+     * and component-level {@link OverlayPermissionGates}.
+     *
+     * @param overlayId      stable overlay identifier (e.g. {@code "zone:default"} or {@code "hotspot:12,12"})
+     * @param providerId     supplying plugin identifier (e.g. {@code "leafrtp"}, {@code "leafsleuth"})
+     * @param providerName   human-readable supplier display name
+     * @param label          human-readable overlay label
+     * @param world          target world name
+     * @param shape          geometric shape ({@code "CIRCLE"}, {@code "DONUT"}, {@code "SQUARE"}, {@code "POLYGON"}, {@code "VOLUME"}, {@code "HEATMAP"})
+     * @param centerX        center block X coordinate
+     * @param centerZ        center block Z coordinate
+     * @param radius         outer radius in blocks
+     * @param innerRadius    inner hole radius in blocks (for annular/donut regions)
+     * @param color          symbolic color or hex string
+     * @param targetFile     bound configuration file path (for resize/move writeback)
+     * @param targetKey      bound configuration key path
+     * @param snapStepBlocks coordinate grid snap step in blocks
+     * @param permissions    component-level permission gates for viewing vs resizing/moving/acting
+     * @param metadata       additional key/value attribution metadata
+     */
+    record InteractiveMapOverlay(
+            String overlayId,
+            String providerId,
+            String providerName,
+            String label,
+            String world,
+            String shape,
+            double centerX,
+            double centerZ,
+            double radius,
+            double innerRadius,
+            String color,
+            String targetFile,
+            String targetKey,
+            int snapStepBlocks,
+            OverlayPermissionGates permissions,
+            Map<String, String> metadata
+    ) {
+        public InteractiveMapOverlay {
+            Objects.requireNonNull(overlayId, "overlayId");
+            Objects.requireNonNull(providerId, "providerId");
+            if (overlayId.isBlank()) {
+                throw new IllegalArgumentException("overlayId must not be blank");
+            }
+            if (providerId.isBlank()) {
+                throw new IllegalArgumentException("providerId must not be blank");
+            }
+            providerName = (providerName == null || providerName.isBlank()) ? providerId : providerName.trim();
+            label = (label == null || label.isBlank()) ? overlayId : label.trim();
+            world = (world == null || world.isBlank()) ? "world" : world.trim();
+            shape = (shape == null || shape.isBlank()) ? "CIRCLE" : shape.trim().toUpperCase(Locale.ROOT);
+            color = (color == null || color.isBlank()) ? "green" : color.trim();
+            targetFile = targetFile == null ? "" : targetFile.trim();
+            targetKey = targetKey == null ? "" : targetKey.trim();
+            snapStepBlocks = Math.max(1, snapStepBlocks);
+            permissions = permissions == null ? OverlayPermissionGates.rtpRegionDefault() : permissions;
+            metadata = metadata == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
+        }
     }
 
     /**
@@ -383,6 +757,17 @@ public interface WorldBlockFeed {
                 "world", "Overworld", "overworld",
                 -64, 319, 144, 68, -96, 0.0, 0.0, 16384.0, 6000L, false, 1, 1024
         ));
+    }
+
+    /**
+     * Returns all servers aggregated into this map hub ({@code leafmap-ADR-004}, {@code REQ-MAP-MULTI-001}).
+     */
+    default List<ServerMapDescriptor> servers() {
+        List<String> worldNames = worlds().stream()
+                .map(WorldMapDescriptor::localWorldName)
+                .distinct()
+                .toList();
+        return List.of(new ServerMapDescriptor("local", "Local Server", worldNames, 0, 0L, 0L));
     }
 
     /**
@@ -464,4 +849,76 @@ public interface WorldBlockFeed {
      * @return valid JSON object string containing `providerId`, `kernel`, `packetBatch`, and `multiSpanColumns`
      */
     String toWebPanelFeedJson(String world, int focusBlockX, int focusBlockY, int focusBlockZ);
+
+    /**
+     * Registers or updates a spatial {@link InteractiveMapOverlay} (such as a {@code LeafRTP}
+     * region donut or {@code LeafSleuth} lag hotspot volume) and its component-level
+     * {@link OverlayPermissionGates} directly with the map engine.
+     *
+     * @param overlay interactive spatial overlay descriptor
+     */
+    default void registerInteractiveOverlay(InteractiveMapOverlay overlay) {
+        Objects.requireNonNull(overlay, "overlay");
+    }
+
+    /**
+     * Unregisters a spatial {@link InteractiveMapOverlay} by its {@code overlayId}.
+     *
+     * @param overlayId overlay identifier
+     * @return {@code true} if an overlay was removed
+     */
+    default boolean unregisterInteractiveOverlay(String overlayId) {
+        return false;
+    }
+
+    /**
+     * Returns all active {@link InteractiveMapOverlay}s registered with this map engine for the
+     * target world (or all worlds when {@code world} is {@code null} or {@code "*"}).
+     *
+     * @param world target world name or {@code null}
+     * @return immutable list of registered interactive overlays
+     */
+    default List<InteractiveMapOverlay> interactiveOverlays(String world) {
+        return List.of();
+    }
+
+    /**
+     * Returns the monotonically increasing overlay/tab revision counter (`DSN-1` atomic sequencing).
+     */
+    default long overlayRevision() {
+        return 0L;
+    }
+
+    /**
+     * Builds the generic {@code LeafConfig} workspace extension bundle (`workspaceTabs` with the
+     * {@code world-map} tab and {@code LeafMapClientKernel.mountWorkspaceTab} renderer) owned and
+     * supplied by this map engine.
+     *
+     * @return generic workspace extension bundle map
+     */
+    default Map<String, Object> buildLeafConfigWorkspaceExtension() {
+        return Map.of();
+    }
+
+    /**
+     * Builds the generic {@code LeafConfig} workspace extension bundle filtered and gated for a
+     * viewer session using the supplied {@code permissionChecker} (e.g. distinguishing viewing the
+     * RTP donut vs resizing or moving it).
+     *
+     * @param permissionChecker predicate evaluating permission nodes for the target viewer
+     * @return generic workspace extension bundle map
+     */
+    default Map<String, Object> buildLeafConfigWorkspaceExtensionForViewer(Predicate<String> permissionChecker) {
+        return buildLeafConfigWorkspaceExtension();
+    }
+
+    /**
+     * Registers a reactive push callback invoked whenever registered spatial overlays or map state
+     * change so {@code LeafConfig} receives updated {@code workspaceTabs} bundles automatically.
+     *
+     * @param listener consumer receiving the updated workspace extension bundle map
+     */
+    default void onWorkspaceExtensionUpdated(Consumer<Map<String, Object>> listener) {
+        Objects.requireNonNull(listener, "listener");
+    }
 }

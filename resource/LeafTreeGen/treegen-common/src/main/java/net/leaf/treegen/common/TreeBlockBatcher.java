@@ -109,21 +109,27 @@ public final class TreeBlockBatcher {
             }
         }
 
+        boolean applied = true;
         if (!batch.isEmpty()) {
-            platform.setChunkBlocks(worldName, chunkX, chunkZ, batch);
+            applied = platform.setChunkBlocks(worldName, chunkX, chunkZ, batch);
+            if (!applied) {
+                platform.logger().warning(
+                        "Failed to apply tree block batch (" + batch.size() + " blocks) in chunk ("
+                                + chunkX + "," + chunkZ + ") of world " + worldName);
+            }
         }
 
         long endNanos = System.nanoTime();
         long tickTime = Math.max(1L, endNanos - startNanos);
-        if (placedThisTick > 0) {
+        if (applied && placedThisTick > 0) {
             blockCostEstimator.recordNanos(Math.max(1L, tickTime / placedThisTick));
+            totalBlocksPlaced.addAndGet(placedThisTick);
         }
         totalTimeSpentNanos.addAndGet(tickTime);
-        totalBlocksPlaced.addAndGet(placedThisTick);
         totalBatches.incrementAndGet();
         lastBatchNanos.set(endNanos);
 
-        if (i < entries.size()) {
+        if (applied && i < entries.size()) {
             final int nextStart = i;
             platform.scheduleDelayedTask(worldName, chunkX, chunkZ,
                     () -> placeNextBatch(worldName, chunkX, chunkZ, entries, nextStart, allocationMs, maxBlocksPerTick),
