@@ -1687,6 +1687,42 @@ public class TreeGenTest {
                 "hyphae must be recognized as wood and placed before leaves");
     }
 
+    @Test
+    public void testSegmentedTreeModelExportsMultiChunkLcaDecoratorStamps() {
+        io.github.dailystruggle.anvil.LcaDecoratorStamp.clearRegistry();
+        try {
+            TreeModel model = new TreeModel("spiral_oak");
+            for (int y = 0; y < 7; y++) {
+                model.setBlock(0, y, 0, "minecraft:dark_oak_log[axis=y]");
+            }
+            for (int dx = -3; dx <= 3; dx++) {
+                for (int dz = -3; dz <= 3; dz++) {
+                    if (dx != 0 || dz != 0) {
+                        model.setBlock(
+                                dx, 6, dz,
+                                "minecraft:dark_oak_leaves[distance=1,persistent=false]");
+                    }
+                }
+            }
+            SegmentedTreeModel segmented = new SegmentedTreeModel(model);
+            io.github.dailystruggle.anvil.LcaDecoratorStamp borderStamp =
+                    segmented.toLcaDecoratorStamp(14, 14, Set.of(1, 5));
+            Assertions.assertEquals("spiral_oak", borderStamp.speciesId());
+            Assertions.assertEquals(4, borderStamp.chunkSlices().size(),
+                    "Canopy radius 3 anchored at (14,14) must partition across 4 chunk slices");
+            Assertions.assertTrue(borderStamp.totalHilbertRunCount() < borderStamp.totalVoxelCount(),
+                    "01:H_3 coalescing must emit fewer runs than individual blocks");
+
+            List<io.github.dailystruggle.anvil.LcaDecoratorStamp> variants =
+                    segmented.registerInLcaStampRegistry(Set.of(1, 5));
+            Assertions.assertEquals(4, variants.size());
+            Assertions.assertTrue(
+                    io.github.dailystruggle.anvil.LcaDecoratorStamp.registeredSpeciesIds().contains("spiral_oak"));
+        } finally {
+            io.github.dailystruggle.anvil.LcaDecoratorStamp.clearRegistry();
+        }
+    }
+
     private static class MockPlatform implements Platform {
         private final Path root = Paths.get("build/test-data-" + System.currentTimeMillis());
         public final Map<String, String> placedBlocks = new HashMap<>();

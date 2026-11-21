@@ -1,10 +1,14 @@
 package net.leaf.treegen.common;
 
+import io.github.dailystruggle.anvil.LcaDecoratorStamp;
 import java.util.*;
 
 /**
- * A compressed version of TreeModel that stores blocks in segments.
- * Optimized for memory by linearizing 3D space and using relative positions.
+ * Compressed segment-packed representation of {@link TreeModel} supporting multi-chunk placement
+ * and {@code 01:H_3} Hilbert {@link LcaDecoratorStamp} export for {@code .lca} canopy stitching.
+ *
+ * @governedBy treegen-ADR-001, treegen-ADR-002, treegen-ADR-003, anvil-api-ADR-003, ADR-115
+ * @trace REQ-CFG-ATLAS-001, REQ-RTP-S-004, REQ-RTP-S-005
  */
 public final class SegmentedTreeModel {
     private final String speciesId;
@@ -267,5 +271,72 @@ public final class SegmentedTreeModel {
             count += segment.blockIndices.length;
         }
         return count;
+    }
+
+    /**
+     * Exports this compressed tree model anchored at chunk-local {@code (anchorLocalX, anchorLocalZ)}
+     * into a wood-first, {@code 01:H_3}-sorted {@link LcaDecoratorStamp} partitioned across all
+     * touched relative chunk slices.
+     */
+    public LcaDecoratorStamp toLcaDecoratorStamp(
+            int anchorLocalX,
+            int anchorLocalZ,
+            Set<Integer> allowedBiomeIds
+    ) {
+        List<TreeModel.BlockPos> positions = new ArrayList<>();
+        Map<TreeModel.BlockPos, String> stateByPos = new HashMap<>();
+        for (Segment segment : segments) {
+            for (int i = 0; i < segment.blockIndices.length; i++) {
+                int relX = segment.offsetX + (segment.relativePositions[i * 2] & 0xFF);
+                int relY = segment.offsetY;
+                int relZ = segment.offsetZ + (segment.relativePositions[i * 2 + 1] & 0xFF);
+                String state = palette.get(segment.blockIndices[i] & 0xFF);
+                TreeModel.BlockPos pos = new TreeModel.BlockPos(relX, relY, relZ);
+                positions.add(pos);
+                stateByPos.put(pos, state);
+            }
+        }
+        List<TreeModel.BlockPos> ordered = orderForPlacement(positions, stateByPos);
+        List<LcaDecoratorStamp.RelativeVoxel> voxels = new ArrayList<>(ordered.size());
+        for (TreeModel.BlockPos pos : ordered) {
+            String state = stateByPos.get(pos);
+            LcaDecoratorStamp.BlockCategory cat = isWood(state)
+                    ? LcaDecoratorStamp.BlockCategory.WOOD
+                    : (isLeaf(state)
+                            ? LcaDecoratorStamp.BlockCategory.FOLIAGE
+                            : LcaDecoratorStamp.BlockCategory.DECORATOR);
+            voxels.add(new LcaDecoratorStamp.RelativeVoxel(pos.x(), pos.y(), pos.z(), state, cat));
+        }
+        String effId = (speciesId == null || speciesId.isBlank()) ? "leaftreegen_custom" : speciesId;
+        return LcaDecoratorStamp.fromRelativeBlocks(
+                effId, anchorLocalX, anchorLocalZ, voxels, allowedBiomeIds);
+    }
+
+    /**
+     * Bakes interior and border-crossing anchor variants of this species into the global Tier 1
+     * {@link LcaDecoratorStamp} registry for heterogeneous Pass 2 {@code .lca} canopy stitching.
+     */
+    public List<LcaDecoratorStamp> registerInLcaStampRegistry(Set<Integer> allowedBiomeIds) {
+        int[][] anchors = {{3, 3}, {13, 3}, {3, 13}, {13, 13}};
+        List<LcaDecoratorStamp> baked = new ArrayList<>(anchors.length);
+        for (int[] a : anchors) {
+            baked.add(toLcaDecoratorStamp(a[0], a[1], allowedBiomeIds));
+        }
+        String effId = (speciesId == null || speciesId.isBlank()) ? "leaftreegen_custom" : speciesId;
+        LcaDecoratorStamp.registerSpeciesVariants(effId, baked);
+        return Collections.unmodifiableList(baked);
+    }
+
+    /**
+     * Exports this compressed tree model through the shared Tier 1 {@link io.github.dailystruggle.anvil.LcaStructureStamp}
+     * contract without introducing any cross-plugin dependency on {@code LeafGen}.
+     */
+    public io.github.dailystruggle.anvil.LcaStructureStamp toLcaStructureStamp(
+            int anchorLocalX,
+            int anchorLocalZ,
+            Set<Integer> allowedBiomeIds
+    ) {
+        return io.github.dailystruggle.anvil.LcaStructureStamp.fromDecoratorStamp(
+                toLcaDecoratorStamp(anchorLocalX, anchorLocalZ, allowedBiomeIds));
     }
 }
