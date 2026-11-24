@@ -694,12 +694,12 @@ public class TreeGenEventControllerTest {
 
         long chosenSeed = -1L;
         for (long s = 1L; s < 10_000L; s++) {
-            int[] t31 = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+            int[] t31 = net.leaf.predict.DistributionSampler
                     .gridCellSample(31, 0, 2, s, borderSpruce.effectiveSalt());
-            int[] t32 = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+            int[] t32 = net.leaf.predict.DistributionSampler
                     .gridCellSample(32, 0, 2, s, borderSpruce.effectiveSalt());
             java.util.Random gr = new java.util.Random(
-                    io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                    net.leaf.predict.DistributionSampler
                             .variantSeed(borderSpruce.id(), (((long) 31) << 32) ^ (0 & 0xFFFFFFFFL) ^ s));
             int localX = gr.nextInt(16);
             if (t31[0] == 31 && t31[1] == 0 && (t32[0] != 32 || t32[1] != 0) && localX >= 14) {
@@ -791,12 +791,12 @@ public class TreeGenEventControllerTest {
                 200);
         long groupSeed = -1L;
         for (long s = 1L; s < 10_000L; s++) {
-            int[] t31 = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+            int[] t31 = net.leaf.predict.DistributionSampler
                     .gridCellSample(31, 0, 2, s, groupWrapper.effectiveSalt());
-            int[] t32 = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+            int[] t32 = net.leaf.predict.DistributionSampler
                     .gridCellSample(32, 0, 2, s, groupWrapper.effectiveSalt());
             java.util.Random gr = new java.util.Random(
-                    io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                    net.leaf.predict.DistributionSampler
                             .variantSeed(groupWrapper.id(), (((long) 31) << 32) ^ (0 & 0xFFFFFFFFL) ^ s));
             int localX = gr.nextInt(16);
             if (t31[0] == 31 && t31[1] == 0 && (t32[0] != 32 || t32[1] != 0) && localX >= 4 && localX <= 5) {

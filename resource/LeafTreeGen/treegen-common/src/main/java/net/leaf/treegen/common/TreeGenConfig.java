@@ -135,7 +135,7 @@ public final class TreeGenConfig {
     /**
      * Helper to load from RtpYamlConfig.
      */
-    public static TreeGenConfig fromYaml(io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlConfig yaml, TreeRegistry registry, Platform platform) {
+    public static TreeGenConfig fromYaml(net.leaf.yaml.RtpYamlConfig yaml, TreeRegistry registry, Platform platform) {
         Map<String, TreeSpecies> registered = registry.getSpeciesMap();
 
         try {
@@ -172,16 +172,16 @@ public final class TreeGenConfig {
         speciesMap.putAll(registered);
 
         // Placement overrides from config.yml
-        io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlSection placementRoot = null;
+        net.leaf.yaml.RtpYamlSection placementRoot = null;
         Object placementObj = yaml.get("placement");
-        if (placementObj instanceof io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlSection) {
-            placementRoot = (io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlSection) placementObj;
+        if (placementObj instanceof net.leaf.yaml.RtpYamlSection) {
+            placementRoot = (net.leaf.yaml.RtpYamlSection) placementObj;
         }
 
         if (placementRoot != null) {
             for (String id : placementRoot.getKeys(false)) {
                 Object val = placementRoot.get(id);
-                if (!(val instanceof io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlSection sec)) {
+                if (!(val instanceof net.leaf.yaml.RtpYamlSection sec)) {
                     continue;
                 }
 
@@ -281,7 +281,7 @@ public final class TreeGenConfig {
 
                 Map<String, TreeSpecies.ProceduralParams> treeDefs = new HashMap<>(existing.treeDefinitions() != null ? existing.treeDefinitions() : Map.of());
                 Object defsObj = sec.get("definitions");
-                if (defsObj instanceof io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlSection dSec) {
+                if (defsObj instanceof net.leaf.yaml.RtpYamlSection dSec) {
                     for (String defName : dSec.getKeys(false)) {
                         TreeSpecies.ProceduralParams p = treeDefs.get(defName);
                         if (p != null) {
@@ -301,7 +301,7 @@ public final class TreeGenConfig {
                 if (treesObj == null) treesObj = sec.get("weighted-trees");
                 if (treesObj == null) treesObj = sec.get("weighted_trees");
 
-                if (treesObj instanceof io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlSection tSec) {
+                if (treesObj instanceof net.leaf.yaml.RtpYamlSection tSec) {
                     trees = new ArrayList<>();
                     for (String tId : tSec.getKeys(false)) {
                         String resolvedId = tId.toLowerCase(Locale.ROOT);
@@ -322,7 +322,7 @@ public final class TreeGenConfig {
 
                 TreeSpecies.GrowthParams growth = existing.growth();
                 Object growthObj = sec.get("growth");
-                if (growthObj instanceof io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlSection gSec) {
+                if (growthObj instanceof net.leaf.yaml.RtpYamlSection gSec) {
                     boolean gEnabled = gSec.getBoolean("enabled", growth != null && growth.enabled());
                     long gTime = gSec.contains("total-time")
                             ? gSec.getLong("total-time", 24000L)

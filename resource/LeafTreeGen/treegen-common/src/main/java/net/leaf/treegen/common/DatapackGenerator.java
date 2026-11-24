@@ -372,7 +372,7 @@ public final class DatapackGenerator {
 
     /** Per-variant pool weight so that {@code count} variants together carry placement weight {@code weight}. */
     private int variantPoolWeight(int weight, int count) {
-        return io.github.dailystruggle.rtp.common.predict.DistributionSampler.spreadPoolWeight(weight, count);
+        return net.leaf.predict.DistributionSampler.spreadPoolWeight(weight, count);
     }
 
     /**
@@ -397,7 +397,7 @@ public final class DatapackGenerator {
             raw[i] = ((Number) elements.get(i).get("weight")).intValue();
         }
         int[] normalized =
-                io.github.dailystruggle.rtp.common.predict.DistributionSampler.normalizePoolWeights(
+                net.leaf.predict.DistributionSampler.normalizePoolWeights(
                         raw, MAX_POOL_WEIGHT);
         for (int i = 0; i < elements.size(); i++) {
             elements.get(i).put("weight", normalized[i]);
@@ -561,7 +561,7 @@ public final class DatapackGenerator {
 
     /** Deterministic per-variant seed so regenerating the datapack is stable. */
     private static long variantSeed(TreeSpecies species, String variantName) {
-        return io.github.dailystruggle.rtp.common.predict.DistributionSampler.variantSeed(
+        return net.leaf.predict.DistributionSampler.variantSeed(
                 variantName, species.effectiveSalt());
     }
 

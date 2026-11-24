@@ -330,7 +330,7 @@ public final class TreeGenEventController implements AutoCloseable {
             }
             int spacing = Math.max(1, species.spacing());
             int salt = species.effectiveSalt();
-            int[] targetChunk = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+            int[] targetChunk = net.leaf.predict.DistributionSampler
                     .gridCellSample(chunkX, chunkZ, spacing, worldSeed, salt);
             if (chunkX != targetChunk[0] || chunkZ != targetChunk[1]) {
                 continue;
@@ -518,7 +518,7 @@ public final class TreeGenEventController implements AutoCloseable {
                 continue;
             }
             int spacing = Math.max(1, species.spacing());
-            int[] targetChunk = io.github.dailystruggle.rtp.common.predict.DistributionSampler
+            int[] targetChunk = net.leaf.predict.DistributionSampler
                     .gridCellSample(adjCX, adjCZ, spacing, worldSeed, species.effectiveSalt());
             if (adjCX == targetChunk[0]
                     && adjCZ == targetChunk[1]
@@ -544,7 +544,7 @@ public final class TreeGenEventController implements AutoCloseable {
         int minTargetZ = targetCZ << 4;
         int maxTargetZ = minTargetZ + 15;
         Random gridRandom = new Random(
-                io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                net.leaf.predict.DistributionSampler
                         .variantSeed(
                                 species.id(),
                                 (((long) adjCX) << 32) ^ (adjCZ & 0xFFFFFFFFL) ^ worldSeed));
@@ -620,7 +620,7 @@ public final class TreeGenEventController implements AutoCloseable {
             TreeGenConfig cfg,
             ChunkLandData landData) {
         Random gridRandom = new Random(
-                io.github.dailystruggle.rtp.common.predict.DistributionSampler
+                net.leaf.predict.DistributionSampler
                         .variantSeed(
                                 species.id(),
                                 (((long) chunkX) << 32) ^ (chunkZ & 0xFFFFFFFFL) ^ worldSeed));

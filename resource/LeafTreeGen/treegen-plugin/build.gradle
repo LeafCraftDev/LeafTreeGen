@@ -8,7 +8,7 @@ plugins {
     id 'com.gradleup.shadow'
 }
 
-group = 'io.github.dailystruggle'
+group = 'io.github.leafcraftdev'
 version = '1.0.0'
 
 base {

@@ -1,7 +1,7 @@
 package net.leaf.treegen.common;
 
-import io.github.dailystruggle.rtp.common.predict.BudgetPacer;
-import io.github.dailystruggle.rtp.common.predict.EwmaEstimator;
+import net.leaf.predict.BudgetPacer;
+import net.leaf.predict.EwmaEstimator;
 import io.github.dailystruggle.server.api.BlockPos3i;
 
 import java.util.ArrayList;

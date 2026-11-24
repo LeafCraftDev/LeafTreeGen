@@ -1,6 +1,6 @@
 package net.leaf.treegen.common;
 
-import io.github.dailystruggle.rtp.common.predict.PolarCurve;
+import net.leaf.predict.PolarCurve;
 
 import java.util.ArrayDeque;
 import java.util.Collection;

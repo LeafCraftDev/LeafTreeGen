@@ -1,7 +1,7 @@
 package net.leaf.treegen.common;
 
 import io.github.dailystruggle.commandsapi.common.CommandsAPI;
-import io.github.dailystruggle.rtp.common.configuration.yaml.RtpYamlConfig;
+import net.leaf.yaml.RtpYamlConfig;
 import io.github.dailystruggle.server.api.ServerAccessor;
 import net.leaf.treegen.common.command.LeafTreeGenCommand;
 
