@@ -1,9 +1,9 @@
 package net.leaf.treegen.common;
 
-import io.github.dailystruggle.rtp.common.predict.DistributionSampler;
-import io.github.dailystruggle.rtp.common.predict.PerlinNoise;
-import io.github.dailystruggle.rtp.common.predict.PolarCurve;
-import io.github.dailystruggle.rtp.common.predict.UnitCurve;
+import net.leaf.predict.DistributionSampler;
+import net.leaf.predict.PerlinNoise;
+import net.leaf.predict.PolarCurve;
+import net.leaf.predict.UnitCurve;
 import java.util.*;
 import java.util.function.IntBinaryOperator;
 

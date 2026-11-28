@@ -95,19 +95,19 @@ PRODUCTS = {
     "leafsleep": ProductSpec(
         "leafsleep",
         "LeafSleep",
-        "LeafSleep-Pro",
+        None,
         "LeafSleep-x.y.z.jar",
-        "LeafSleep-Pro-x.y.z.jar",
+        None,
         ROOT / "resource" / "LeafSleep" / "docs" / "publishing" / "FRONT_PAGE.md",
-        repo_base="https://github.com/DailyStruggle/OnePlayerSleep",
+        repo_base="https://github.com/LeafCraftDev/LeafSleep",
         repo_branch="main",
     ),
     "leaftreegen": ProductSpec(
         "leaftreegen",
         "LeafTreeGen",
-        "LeafTreeGen-Pro",
+        None,
         "LeafTreeGen-x.y.z.jar",
-        "LeafTreeGen-Pro-x.y.z.jar",
+        None,
         ROOT / "resource" / "LeafTreeGen" / "docs" / "publishing" / "FRONT_PAGE.md",
         repo_base="https://docs.leafcraft.net/mc/leaftreegen",
         repo_branch="main",
@@ -115,18 +115,19 @@ PRODUCTS = {
     "leafconfig": ProductSpec(
         "leafconfig",
         "LeafConfig",
-        "LeafConfig-Pro",
-        "LeafConfig-x.y.z.jar",
-        "LeafConfig-Pro-x.y.z.jar",
+        None,
+        "LeafConfig-0.1.0.jar",
+        None,
         ROOT / "resource" / "LeafConfig" / "docs" / "publishing" / "FRONT_PAGE.md",
         repo_base="https://docs.leafcraft.net/mc/leafconfig",
+        repo_branch="main",
     ),
     "leafsleuth": ProductSpec(
         "leafsleuth",
         "LeafSleuth",
-        None,
+        "LeafSleuth",
         "LeafSleuth-x.y.z.jar",
-        None,
+        "LeafSleuth-x.y.z.jar",
         ROOT / "resource" / "LeafSleuth" / "docs" / "publishing" / "FRONT_PAGE.md",
         repo_base="https://docs.leafcraft.net/mc/leafsleuth",
         repo_branch="main",
@@ -135,7 +136,7 @@ PRODUCTS = {
         "leaffuzz",
         "LeafFuzz",
         None,
-        "LeafFuzz-0.1.0.jar",
+        "LeafFuzz-0.1.1.jar",
         None,
         ROOT / "resource" / "LeafFuzz" / "docs" / "publishing" / "FRONT_PAGE.md",
         repo_base="https://docs.leafcraft.net/mc/leaffuzz",
@@ -148,6 +149,16 @@ PRODUCTS = {
         "LeafAnvil-x.y.z.jar",
         "LeafAnvil-x.y.z.jar",
         ROOT / "resource" / "LeafAnvil" / "docs" / "publishing" / "FRONT_PAGE.md",
+        repo_base="https://docs.leafcraft.net/mc/leafanvil",
+        repo_branch="main",
+    ),
+    "leafanvil-net": ProductSpec(
+        "leafanvil-net",
+        "LeafAnvil-Net",
+        None,
+        "LeafAnvil-Net-x.y.z.jar",
+        None,
+        ROOT / "resource" / "LeafAnvil" / "leafanvil-net" / "docs" / "publishing" / "FRONT_PAGE.md",
         repo_base="https://docs.leafcraft.net/mc/leafanvil",
         repo_branch="main",
     ),
@@ -553,6 +564,20 @@ def _match_product_for_rel(rel):
         res_root = res_dir.relative_to(ROOT).as_posix().lower()
         if rel_lower == res_root or rel_lower.startswith(res_root + "/"):
             return spec
+    parts = rel.replace("\\", "/").lstrip("/").split("/")
+    if len(parts) >= 2 and parts[0].lower() in ("resource", "plugins") and parts[1].lower().startswith("leaf"):
+        res_name = parts[1]
+        pid = res_name.lower()
+        return ProductSpec(
+            pid,
+            res_name,
+            res_name,
+            f"{res_name}-x.y.z.jar",
+            f"{res_name}-x.y.z.jar",
+            ROOT / "resource" / res_name / "docs" / "publishing" / "FRONT_PAGE.md",
+            repo_base=f"https://docs.leafcraft.net/mc/{pid}",
+            repo_branch="main",
+        )
     return None
 
 
@@ -857,6 +882,24 @@ def check_denylist(target, text):
         for pattern, label in DENYLIST:
             if pattern.search(line):
                 problems.append(f"{target.filename}:{n}: {label} is not allowed on {target.name}: {line.strip()[:120]}")
+    return problems
+
+
+def check_bbb_gallery_only_images(target, kept):
+    """Ensures BuiltByBit targets keep content images/videos in the gallery carousel (<!-- not: bbb -->)."""
+    if target.name not in ("bbb-pro", "bbb-lite"):
+        return []
+    if not any(line.strip() in ZONE1_START_HEADINGS for _, line in kept):
+        return []
+    problems = []
+    for n, line in kept:
+        for m in _IMAGE.finditer(line):
+            src = m.group("src")
+            if not _is_svg_badge(src):
+                problems.append(
+                    f"line {n}: inline image '{src}' on {target.name}; wrap in '<!-- not: bbb -->' "
+                    "and list in 'BuiltByBit Carousel Slides:' for gallery upload"
+                )
     return problems
 
 
@@ -1203,6 +1246,7 @@ def render(
     _lint(kept)
     jargon = (
         check_listing_metadata(source_text)
+        + check_bbb_gallery_only_images(target, kept)
         + check_zone1_jargon(kept)
         + check_short_version_labels(kept)
         + check_zone2_onramp(kept)
@@ -1279,8 +1323,17 @@ def main(argv=None):
         available = [pid for pid, spec in PRODUCTS.items() if spec.source.is_file()]
         if len(available) == 1:
             selected_product = available[0]
+        elif len(available) > 1:
+            selected_product = "all"
+        elif args.check:
+            print("front pages valid (0 storefront products present in standalone repository)")
+            return 0
     if selected_product is not None and args.source is None:
-        product_ids = list(PRODUCTS.keys()) if selected_product == "all" else [selected_product]
+        product_ids = (
+            [pid for pid, spec in PRODUCTS.items() if spec.source.is_file()]
+            if selected_product == "all"
+            else [selected_product]
+        )
         for pid in product_ids:
             spec = PRODUCTS[pid]
             prod_targets = targets_for_product(pid)

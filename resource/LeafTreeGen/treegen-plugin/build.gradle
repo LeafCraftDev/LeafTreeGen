@@ -8,8 +8,8 @@ plugins {
     id 'com.gradleup.shadow'
 }
 
-group = 'io.github.dailystruggle'
-version = '1.1.0'
+group = 'io.github.leafcraftdev'
+version = '1.0.0'
 
 base {
     archivesName = 'LeafTreeGen'
@@ -37,6 +37,7 @@ dependencies {
     api project(':resource:LeafTreeGen:treegen-paper')
     implementation(project(':bukkit:bukkit-common')) { transitive = false }
     implementation(project(':effects-api')) { transitive = false }
+    implementation(project(':anvil-api')) { transitive = false }
 
     if (findProject(':resource:LeafTreeGen:treegen-fabric') != null) {
         api(project(':resource:LeafTreeGen:treegen-fabric')) { transitive = false }

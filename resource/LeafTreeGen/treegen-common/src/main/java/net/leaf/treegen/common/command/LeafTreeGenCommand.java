@@ -1,17 +1,22 @@
 package net.leaf.treegen.common.command;
 
 import io.github.dailystruggle.commandsapi.common.CommandParameter;
+import io.github.dailystruggle.commandsapi.common.CommandsAPI;
 import io.github.dailystruggle.commandsapi.common.CommandsAPICommand;
 import io.github.dailystruggle.commandsapi.common.parameters.BooleanParameter;
+import io.github.dailystruggle.commandsapi.common.parameters.CoordinateParameter;
 import io.github.dailystruggle.commandsapi.common.parameters.IntegerParameter;
+import io.github.dailystruggle.server.api.BookMenuSpec;
 import net.leaf.treegen.common.Platform;
 import net.leaf.treegen.common.ProceduralGenerator;
 import net.leaf.treegen.common.TreeGenConfig;
 import net.leaf.treegen.common.TreeRegistry;
 import net.leaf.treegen.common.TreeSpecies;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -29,6 +34,8 @@ import java.util.function.Supplier;
  * and NeoForge. Platform adapters register it via {@link Platform#registerCommands(Object, String...)}.
  */
 public final class LeafTreeGenCommand extends AbstractLeafCommand {
+
+    private final Platform platform;
 
     public LeafTreeGenCommand(Platform platform,
                               Supplier<TreeGenConfig> configRef,
@@ -99,7 +106,8 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
                                SaplingGiver saplingGiver,
                                Platform platform) {
         super("leaftree", "leaftreegen.admin", "LeafTreeGen root command.", null, feedback, callerFeedback);
-        addSubCommand(new GenerateSub(this, configRef, generator, feedback, callerFeedback, callerLocation));
+        this.platform = platform;
+        addSubCommand(new GenerateSub(this, configRef, generator, platform, feedback, callerFeedback, callerLocation));
         addSubCommand(new GiveSub(this, configRef, registryRef, platform, feedback, callerFeedback,
                 saplingGiver == null ? SaplingGiver.NONE : saplingGiver));
         addSubCommand(new ListSub(this, configRef, registryRef, platform, feedback, callerFeedback));
@@ -109,10 +117,36 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
     }
 
     @Override
+    public void msgNoPermission(UUID callerId, String permission) {
+        reply(callerId, "Missing permission: " + permission);
+    }
+
+    @Override
     public boolean onCommand(UUID callerId, Map<String, List<String>> parameterValues, CommandsAPICommand nextCommand) {
         // Root with no subcommand: print usage. Sub-command dispatch is handled by TreeCommand.
         if (nextCommand == null) {
             reply(callerId, "Usage: /leaftree <generate|give|list|reload|debug|stats> ...");
+            sendInteractiveChips(platform, callerId, List.of(
+                    BookMenuSpec.Fragment.runCommand(
+                            "&a[List]",
+                            "&fList configured tree species\n&a/leaftree list",
+                            "/leaftree list"),
+                    BookMenuSpec.Fragment.plain(" "),
+                    BookMenuSpec.Fragment.runCommand(
+                            "&b[Stats]",
+                            "&fShow tick budget stats\n&b/leaftree stats",
+                            "/leaftree stats"),
+                    BookMenuSpec.Fragment.plain(" "),
+                    BookMenuSpec.Fragment.runCommand(
+                            "&e[Debug]",
+                            "&fDump debug status\n&e/leaftree debug",
+                            "/leaftree debug"),
+                    BookMenuSpec.Fragment.plain(" "),
+                    BookMenuSpec.Fragment.runCommand(
+                            "&6[Reload]",
+                            "&fReload LeafTreeGen configuration\n&6/leaftree reload",
+                            "/leaftree reload")
+            ));
         }
         return true;
     }
@@ -127,18 +161,23 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
         private final CallerLocation.Resolver callerLocation;
 
         GenerateSub(CommandsAPICommand parent, Supplier<TreeGenConfig> configRef,
-                    ProceduralGenerator generator, Consumer<String> feedback,
-                    BiConsumer<UUID, String> callerFeedback,
+                    ProceduralGenerator generator, Platform platform,
+                    Consumer<String> feedback, BiConsumer<UUID, String> callerFeedback,
                     CallerLocation.Resolver callerLocation) {
             super("generate", "leaftreegen.admin", "Generate a tree at x,y,z (default ~ ~ ~, i.e. the caller's location, or origin 0,64,0 from console; supports relative ~ and ~n).", parent, feedback, callerFeedback);
             this.configRef = configRef;
             this.generator = generator;
             this.callerLocation = callerLocation == null ? CallerLocation.Resolver.NONE : callerLocation;
             addParameter("species", new SpeciesParameter(configRef));
-            addParameter("world", new FreeParameter("leaftreegen.admin", "World name"));
-            addParameter("x", new FreeParameter("leaftreegen.admin", "X coordinate"));
-            addParameter("y", new FreeParameter("leaftreegen.admin", "Y coordinate"));
-            addParameter("z", new FreeParameter("leaftreegen.admin", "Z coordinate"));
+            addParameter("world", new WorldParameter(platform));
+            addParameter("x", new CoordinateParameter("leaftreegen.admin", "X coordinate", LeafTreeGenCommand::isValidCoordinate));
+            addParameter("y", new CoordinateParameter("leaftreegen.admin", "Y coordinate", LeafTreeGenCommand::isValidCoordinate));
+            addParameter("z", new CoordinateParameter("leaftreegen.admin", "Z coordinate", LeafTreeGenCommand::isValidCoordinate));
+        }
+
+        @Override
+        public void msgNoPermission(UUID callerId, String permission) {
+            reply(callerId, "Missing permission: " + permission);
         }
 
         @Override
@@ -188,8 +227,14 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
             this.saplingGiver = saplingGiver == null ? SaplingGiver.NONE : saplingGiver;
             addParameter("species", new SpeciesParameter(configRef));
             addParameter("player", new OnlinePlayerParameter(platform));
-            addParameter("amount", new IntegerParameter("leaftreegen.admin", "Amount", (u, v) -> true, 1, 64));
+            addParameter("amount", new IntegerParameter("leaftreegen.admin", "Amount",
+                    (u, v) -> isValidAmount(v), 1, 8, 16, 32, 64));
             addParameter("variant", new VariantParameter(configRef, registryRef, platform));
+        }
+
+        @Override
+        public void msgNoPermission(UUID callerId, String permission) {
+            reply(callerId, "Missing permission: " + permission);
         }
 
         @Override
@@ -204,7 +249,12 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
             String id = speciesArg.get(0);
             TreeSpecies species = cfg.get(id);
             if (species == null) { reply(callerId, "Unknown species: " + id); return true; }
-            int amount = intOr(parameterValues.get("amount"), 1);
+            List<String> amountArg = parameterValues.get("amount");
+            if (amountArg != null && !amountArg.isEmpty() && !isValidAmount(amountArg.get(0))) {
+                msgBadParameter(callerId, "amount", amountArg.get(0));
+                return true;
+            }
+            int amount = intOr(amountArg, 1);
             List<String> playerArg = parameterValues.get("player");
             String playerName = playerArg == null || playerArg.isEmpty() ? null : playerArg.get(0);
 
@@ -214,8 +264,7 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
                 String requested = variantArg.get(0).trim();
                 TreeRegistry registry = registryRef != null ? registryRef.get() : null;
                 if (registry != null) {
-                    String tplWorld = platform != null ? platform.resolveTemplateWorld(null) : "world";
-                    List<String> available = registry.variantsFor(tplWorld, species);
+                    List<String> available = availableVariantsFor(registry, platform, species);
                     variant = available.stream()
                             .filter(v -> v.equals(requested) || v.endsWith("/" + requested) || v.endsWith(":" + requested))
                             .findFirst()
@@ -262,6 +311,11 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
         }
 
         @Override
+        public void msgNoPermission(UUID callerId, String permission) {
+            reply(callerId, "Missing permission: " + permission);
+        }
+
+        @Override
         public boolean onCommand(UUID callerId, Map<String, List<String>> parameterValues, CommandsAPICommand nextCommand) {
             TreeGenConfig cfg = configRef.get();
             if (cfg == null) { reply(callerId, "Config not loaded."); return true; }
@@ -270,15 +324,43 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
                 TreeSpecies species = cfg.get(speciesArg.get(0));
                 if (species == null) { reply(callerId, "Unknown species: " + speciesArg.get(0)); return true; }
                 TreeRegistry registry = registryRef != null ? registryRef.get() : null;
-                String tplWorld = platform != null ? platform.resolveTemplateWorld(null) : "world";
-                List<String> variants = registry != null ? registry.variantsFor(tplWorld, species) : List.of();
+                List<String> variants = availableVariantsFor(registry, platform, species);
                 if (variants.isEmpty()) {
                     reply(callerId, species.id() + ": " + species.displayName());
                 } else {
                     reply(callerId, species.id() + ": " + species.displayName() + " (variants: " + String.join(", ", variants) + ")");
                 }
+                List<BookMenuSpec.Fragment> chips = new ArrayList<>();
+                chips.add(BookMenuSpec.Fragment.runCommand(
+                        "&a[Give Sapling]",
+                        "&fGive 1x " + species.displayName() + " sapling\n&a/leaftree give species=" + species.id(),
+                        "/leaftree give species=" + species.id()));
+                chips.add(BookMenuSpec.Fragment.plain(" "));
+                chips.add(BookMenuSpec.Fragment.runCommand(
+                        "&b[Generate]",
+                        "&fGenerate " + species.displayName() + " at your location\n&b/leaftree generate species=" + species.id(),
+                        "/leaftree generate species=" + species.id()));
+                for (String v : variants) {
+                    chips.add(BookMenuSpec.Fragment.plain(" "));
+                    chips.add(BookMenuSpec.Fragment.runCommand(
+                            "&e[" + v + "]",
+                            "&fGive sapling pinned to variant &e" + v + "\n&a/leaftree give species=" + species.id() + " variant=" + v,
+                            "/leaftree give species=" + species.id() + " variant=" + v));
+                }
+                sendInteractiveChips(platform, callerId, chips);
             } else {
                 reply(callerId, "Species: " + String.join(", ", cfg.ids()));
+                List<BookMenuSpec.Fragment> chips = new ArrayList<>();
+                for (String id : cfg.ids()) {
+                    if (!chips.isEmpty()) {
+                        chips.add(BookMenuSpec.Fragment.plain(" "));
+                    }
+                    chips.add(BookMenuSpec.Fragment.runCommand(
+                            "&a[" + id + "]",
+                            "&fInspect species &e" + id + "\n&a/leaftree list species=" + id,
+                            "/leaftree list species=" + id));
+                }
+                sendInteractiveChips(platform, callerId, chips);
             }
             return true;
         }
@@ -291,6 +373,11 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
                   Consumer<String> feedback, BiConsumer<UUID, String> callerFeedback) {
             super("reload", "leaftreegen.admin", "Reload the config.", parent, feedback, callerFeedback);
             this.reloadHook = reloadHook;
+        }
+
+        @Override
+        public void msgNoPermission(UUID callerId, String permission) {
+            reply(callerId, "Missing permission: " + permission);
         }
 
         @Override
@@ -313,6 +400,11 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
         }
 
         @Override
+        public void msgNoPermission(UUID callerId, String permission) {
+            reply(callerId, "Missing permission: " + permission);
+        }
+
+        @Override
         public boolean onCommand(UUID callerId, Map<String, List<String>> parameterValues, CommandsAPICommand nextCommand) {
             TreeGenConfig cfg = configRef.get();
             if (cfg == null) { reply(callerId, "Config not loaded."); return true; }
@@ -329,6 +421,22 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
             if (platform != null) {
                 reply(callerId, "Worlds: " + platform.getWorldNames());
             }
+            sendInteractiveChips(platform, callerId, List.of(
+                    BookMenuSpec.Fragment.runCommand(
+                            "&a[List Species]",
+                            "&fList configured species\n&a/leaftree list",
+                            "/leaftree list"),
+                    BookMenuSpec.Fragment.plain(" "),
+                    BookMenuSpec.Fragment.runCommand(
+                            "&b[Stats]",
+                            "&fShow tick budget stats\n&b/leaftree stats",
+                            "/leaftree stats"),
+                    BookMenuSpec.Fragment.plain(" "),
+                    BookMenuSpec.Fragment.runCommand(
+                            "&6[Reload]",
+                            "&fReload configuration\n&6/leaftree reload",
+                            "/leaftree reload")
+            ));
             return true;
         }
     }
@@ -340,7 +448,13 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
                  Consumer<String> feedback, BiConsumer<UUID, String> callerFeedback) {
             super("stats", "leaftreegen.admin", "Show tick budget consumption stats.", parent, feedback, callerFeedback);
             this.platform = platform;
-            addParameter("reset", new BooleanParameter("leaftreegen.admin", "Reset stats", (s, v) -> true));
+            addParameter("reset", new BooleanParameter("leaftreegen.admin", "Reset stats",
+                    (s, v) -> v != null && ("true".equalsIgnoreCase(v) || "false".equalsIgnoreCase(v))));
+        }
+
+        @Override
+        public void msgNoPermission(UUID callerId, String permission) {
+            reply(callerId, "Missing permission: " + permission);
         }
 
         @Override
@@ -379,6 +493,17 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
             reply(callerId, "Budget Exceeded Events: " + exceeded);
             reply(callerId, String.format(java.util.Locale.ROOT, "Avg Time per Batch: %.2f ms", avgTimeBatch));
             reply(callerId, String.format(java.util.Locale.ROOT, "Avg Blocks per Batch: %.2f", avgBlocksBatch));
+            sendInteractiveChips(platform, callerId, List.of(
+                    BookMenuSpec.Fragment.runCommand(
+                            "&b[Refresh]",
+                            "&fRefresh tick budget stats\n&b/leaftree stats",
+                            "/leaftree stats"),
+                    BookMenuSpec.Fragment.plain(" "),
+                    BookMenuSpec.Fragment.runCommand(
+                            "&c[Reset Stats]",
+                            "&fReset tick budget counters\n&c/leaftree stats reset=true",
+                            "/leaftree stats reset=true")
+            ));
             return true;
         }
     }
@@ -392,7 +517,7 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
         private final Supplier<TreeGenConfig> configRef;
 
         SpeciesParameter(Supplier<TreeGenConfig> configRef) {
-            super("leaftreegen.admin", "Species", (u, v) -> true);
+            super("leaftreegen.admin", "Species", (u, v) -> v != null && !v.isBlank());
             this.configRef = configRef;
         }
 
@@ -403,12 +528,29 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
         }
     }
 
+    /** World parameter backed by {@link Platform#getWorldNames()}. */
+    private static final class WorldParameter extends CommandParameter {
+        private final Platform platform;
+
+        WorldParameter(Platform platform) {
+            super("leaftreegen.admin", "World name", (u, v) -> v != null && !v.isBlank());
+            this.platform = platform;
+        }
+
+        @Override
+        public Set<String> values() {
+            if (platform == null) return Collections.emptySet();
+            List<String> names = platform.getWorldNames();
+            return names == null ? Collections.emptySet() : new HashSet<>(names);
+        }
+    }
+
     /** Online player parameter backed by {@link Platform#getOnlinePlayerNames()}. */
     private static final class OnlinePlayerParameter extends CommandParameter {
         private final Platform platform;
 
         OnlinePlayerParameter(Platform platform) {
-            super("leaftreegen.admin", "Target player", (u, v) -> true);
+            super("leaftreegen.admin", "Target player", (u, v) -> v != null && !v.isBlank());
             this.platform = platform;
         }
 
@@ -429,7 +571,7 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
         VariantParameter(Supplier<TreeGenConfig> configRef,
                          Supplier<TreeRegistry> registryRef,
                          Platform platform) {
-            super("leaftreegen.admin", "Template variant", (u, v) -> true);
+            super("leaftreegen.admin", "Template variant", (u, v) -> v != null && !v.isBlank());
             this.configRef = configRef;
             this.registryRef = registryRef;
             this.platform = platform;
@@ -438,40 +580,86 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
         @Override
         public Set<String> values() {
             TreeGenConfig cfg = configRef != null ? configRef.get() : null;
+            if (cfg == null) return Collections.emptySet();
             TreeRegistry reg = registryRef != null ? registryRef.get() : null;
-            if (cfg == null || reg == null) return Collections.emptySet();
-            String tplWorld = platform != null ? platform.resolveTemplateWorld(null) : "world";
             Set<String> out = new HashSet<>();
             for (TreeSpecies s : cfg.species().values()) {
-                out.addAll(reg.variantsFor(tplWorld, s));
-                if (s.treeDefinitions() != null) {
-                    out.addAll(s.treeDefinitions().keySet());
-                }
-                if (s.trees() != null) {
-                    for (TreeSpecies.WeightedSpecies ws : s.trees()) {
-                        if (ws != null && ws.id() != null) out.add(ws.id());
-                    }
-                }
+                out.addAll(availableVariantsFor(reg, platform, s));
             }
             return out;
-        }
-    }
-
-    /** A free-form parameter that accepts any value and offers no fixed suggestions. */
-    private static final class FreeParameter extends CommandParameter {
-        FreeParameter(String permission, String description) {
-            super(permission, description, (u, v) -> true);
-        }
-
-        @Override
-        public Set<String> values() {
-            return new HashSet<>();
         }
     }
 
     // ------------------------------------------------------------------
     // Helpers shared by sub-commands
     // ------------------------------------------------------------------
+
+    private static List<String> availableVariantsFor(TreeRegistry registry, Platform platform, TreeSpecies species) {
+        if (species == null) return List.of();
+        Set<String> out = new LinkedHashSet<>();
+        if (registry != null) {
+            String tplWorld = platform != null ? platform.resolveTemplateWorld(null) : "world";
+            out.addAll(registry.variantsFor(tplWorld, species));
+        }
+        if (species.treeDefinitions() != null) {
+            for (String defKey : species.treeDefinitions().keySet()) {
+                if (defKey != null && out.stream().noneMatch(v -> v.equals(defKey) || v.endsWith("/" + defKey) || v.endsWith(":" + defKey))) {
+                    out.add(defKey);
+                }
+            }
+        }
+        if (species.trees() != null) {
+            for (TreeSpecies.WeightedSpecies ws : species.trees()) {
+                if (ws != null && ws.id() != null) {
+                    String wsId = ws.id();
+                    if (out.stream().noneMatch(v -> v.equals(wsId) || v.endsWith("/" + wsId) || v.endsWith(":" + wsId))) {
+                        out.add(wsId);
+                    }
+                }
+            }
+        }
+        return new ArrayList<>(out);
+    }
+
+    private static void sendInteractiveChips(Platform platform, UUID callerId, List<BookMenuSpec.Fragment> chips) {
+        if (platform == null || callerId == null || callerId.equals(CommandsAPI.serverId) || chips == null || chips.isEmpty()) {
+            return;
+        }
+        platform.sendInteractiveLine(callerId, new BookMenuSpec.Line(chips));
+    }
+
+    private static boolean isValidAmount(String raw) {
+        if (raw == null || raw.isBlank()) return false;
+        try {
+            int val = Integer.parseInt(raw.trim());
+            return val >= 1 && val <= 64;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean isValidCoordinate(UUID callerId, String raw) {
+        if (raw == null || raw.isBlank()) return false;
+        String s = raw.trim();
+        if ("~".equals(s) || "-~".equals(s)) return true;
+        try {
+            if (s.startsWith("~")) {
+                Integer.parseInt(s.substring(1).trim());
+                return true;
+            }
+            if (s.startsWith("-~")) {
+                String rest = s.substring(2).trim();
+                if (!rest.isEmpty()) {
+                    Integer.parseInt(rest);
+                }
+                return true;
+            }
+            Integer.parseInt(s);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
 
     private static String firstOr(List<String> values, String fallback) {
         return (values == null || values.isEmpty()) ? fallback : values.get(0);
@@ -502,6 +690,10 @@ public final class LeafTreeGenCommand extends AbstractLeafCommand {
             if (s.startsWith("~")) {
                 String rest = s.substring(1).trim();
                 return rest.isEmpty() ? base : base + Integer.parseInt(rest);
+            }
+            if (s.startsWith("-~")) {
+                String rest = s.substring(2).trim();
+                return rest.isEmpty() ? -base : -base - Integer.parseInt(rest);
             }
             return Integer.parseInt(s);
         } catch (NumberFormatException e) {
